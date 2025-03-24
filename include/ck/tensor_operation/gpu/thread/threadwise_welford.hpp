@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2018-2023, Advanced Micro Devices, Inc. All rights reserved.
+// Copyright (c) 2018-2025, Advanced Micro Devices, Inc. All rights reserved.
 
 #pragma once
 
@@ -40,7 +40,7 @@ struct ThreadwiseWelford
         else
         {
             T delta = x - mean;
-            mean += delta / cur_count_;
+            mean += delta * math::rcp(type_convert<T>(cur_count_));
             T delta2 = x - mean;
             var += delta * delta2;
         }
@@ -94,7 +94,9 @@ struct ThreadwiseWelfordMerge
     Merge(T& mean_a, T& var_a, int32_t& count_a, T mean_b, T var_b, int32_t count_b)
     {
         int count            = count_a + count_b;
-        T count_b_over_count = count == 0 ? type_convert<T>(0) : type_convert<T>(count_b) / count;
+        T count_b_over_count = count == 0
+                                   ? type_convert<T>(0)
+                                   : type_convert<T>(count_b) * math::rcp(type_convert<T>(count));
         T delta              = mean_b - mean_a;
         mean_a += delta * count_b_over_count;
         var_a += var_b + delta * delta * count_a * count_b_over_count;
@@ -128,7 +130,7 @@ struct ThreadwiseWelfordMerge
 
             if constexpr(GetActualVariance)
             {
-                dst_var_buf(iM) = dst_var_buf[iM] / dst_count_buf[iM];
+                dst_var_buf(iM) = dst_var_buf[iM] * math::rcp(type_convert<T>(dst_count_buf[iM]));
             };
         });
     };

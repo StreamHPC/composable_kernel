@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2018-2023, Advanced Micro Devices, Inc. All rights reserved.
+// Copyright (c) 2018-2025, Advanced Micro Devices, Inc. All rights reserved.
 
 #pragma once
 
@@ -40,7 +40,9 @@ struct BlockwiseWelford
     Merge(T& mean_a, T& var_a, CountDataType& count_a, T mean_b, T var_b, CountDataType count_b)
     {
         CountDataType count  = count_a + count_b;
-        T count_b_over_count = count == 0 ? type_convert<T>(0) : type_convert<T>(count_b) / count;
+        T count_b_over_count = count == 0
+                                   ? type_convert<T>(0)
+                                   : type_convert<T>(count_b) * math::rcp(type_convert<T>(count));
         T delta              = mean_b - mean_a;
         mean_a += delta * count_b_over_count;
         var_a += var_b + delta * delta * count_a * count_b_over_count;
@@ -102,7 +104,7 @@ struct BlockwiseWelford
         mean_value = mean_block_buf[offset];
 
         if constexpr(GetActualVariance)
-            var_value = var_block_buf[offset] / count;
+            var_value = var_block_buf[offset] * math::rcp(type_convert<T>(count));
         else
             var_value = var_block_buf[offset];
     };
