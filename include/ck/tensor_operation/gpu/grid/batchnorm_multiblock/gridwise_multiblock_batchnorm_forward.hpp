@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2018-2023, Advanced Micro Devices, Inc. All rights reserved.
+// Copyright (c) 2018-2025, Advanced Micro Devices, Inc. All rights reserved.
 
 #pragma once
 
@@ -140,9 +140,11 @@ struct GridwiseMultiblockBatchNormForward
         make_tuple(Number<MThreadSliceSize>{}, Number<1>{})));
 
     using ThreadwiseWelford1 =
-        ThreadwiseWelford<AccDataType, ThreadReduceSrcDesc_M_K, ThreadReduceDstDesc_M>;
-
+        ThreadwiseWelford<AccDataType, ThreadReduceSrcDesc_M_K, ThreadReduceDstDesc_M, false>;
     using ThreadwiseWelford2 =
+        ThreadwiseWelford<AccDataType, ThreadReduceSrcDesc_M_K, ThreadReduceDstDesc_M, true>;
+
+    using ThreadwiseWelfordMerge =
         ThreadwiseWelfordMerge<AccDataType, ThreadReduceSrcDesc_M_1, ThreadReduceDstDesc_M>;
 
     using BlockwiseWelford1 = BlockwiseWelford<AccDataType,
@@ -258,16 +260,17 @@ struct GridwiseMultiblockBatchNormForward
 
         // Step 1: each workgroup does local welford reduction
 
-        auto threadwise_welford_1 = ThreadwiseWelford1();
-        threadwise_welford_1.max_count_ =
-            get_reduce_count_per_thread(block_local_id, thread_k_cluster_id);
-
         static_for<0, MThreadSliceSize, 1>{}([&](auto I) {
             mean_thread_buf(I) = type_convert<AccDataType>(0.0f);
             var_thread_buf(I)  = type_convert<AccDataType>(0.0f);
         });
 
-        for(index_t reducedTiles = 0; reducedTiles < num_k_block_tile_iteration; ++reducedTiles)
+        const index_t max_count = get_reduce_count_per_thread(block_local_id, thread_k_cluster_id);
+        const index_t num_k_full_iteration = max_count / KThreadSliceSize;
+
+        auto threadwise_welford_1 = ThreadwiseWelford1();
+
+        for(index_t reducedTiles = 0; reducedTiles < num_k_full_iteration; ++reducedTiles)
         {
             threadwise_x_load.Run(x_grid_desc_m_k,
                                   x_global_val_buf,
@@ -279,11 +282,27 @@ struct GridwiseMultiblockBatchNormForward
             threadwise_welford_1.Run(x_thread_buf, mean_thread_buf, var_thread_buf);
         }
 
+        auto threadwise_welford_2       = ThreadwiseWelford2();
+        threadwise_welford_2.cur_count_ = threadwise_welford_1.cur_count_;
+        threadwise_welford_2.max_count_ = max_count;
+
+        if(threadwise_welford_2.cur_count_ < threadwise_welford_2.max_count_)
+        {
+            threadwise_x_load.Run(x_grid_desc_m_k,
+                                  x_global_val_buf,
+                                  thread_buffer_desc_m_k,
+                                  make_tuple(I0, I0),
+                                  x_thread_buf);
+
+            threadwise_x_load.MoveSrcSliceWindow(x_grid_desc_m_k, xy_copy_fwd_step_m_k);
+            threadwise_welford_2.Run(x_thread_buf, mean_thread_buf, var_thread_buf);
+        }
+
         static_for<0, MThreadSliceSize, 1>{}([&](auto I) {
             if constexpr(I > 0)
                 block_sync_lds();
 
-            count_thread_buf(I) = threadwise_welford_1.cur_count_;
+            count_thread_buf(I) = threadwise_welford_2.cur_count_;
             BlockwiseWelford1::Run(mean_thread_buf(I), var_thread_buf(I), count_thread_buf(I));
         });
 
@@ -429,12 +448,12 @@ struct GridwiseMultiblockBatchNormForward
                                           make_tuple(I0, I0),
                                           tmp_count_thread_buf);
 
-            ThreadwiseWelford2::Run(tmp_mean_thread_buf,
-                                    tmp_var_thread_buf,
-                                    tmp_count_thread_buf,
-                                    mean_thread_buf,
-                                    var_thread_buf,
-                                    count_thread_buf);
+            ThreadwiseWelfordMerge::Run(tmp_mean_thread_buf,
+                                        tmp_var_thread_buf,
+                                        tmp_count_thread_buf,
+                                        mean_thread_buf,
+                                        var_thread_buf,
+                                        count_thread_buf);
 
             reducedSize += KThreadClusterSize;
 

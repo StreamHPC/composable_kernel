@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2018-2023, Advanced Micro Devices, Inc. All rights reserved.
+// Copyright (c) 2018-2025, Advanced Micro Devices, Inc. All rights reserved.
 
 #pragma once
 
@@ -76,8 +76,10 @@ struct GridwiseMultiblockWelfordFirstHalf
     using ThreadReduceDstDesc_M =
         decltype(make_naive_tensor_descriptor_packed(make_tuple(Number<MThreadSliceSize>{})));
 
-    using ThreadwiseWelford =
-        ThreadwiseWelford<AccDataType, ThreadReduceSrcDesc_M_K, ThreadReduceDstDesc_M>;
+    using ThreadwiseWelford1 =
+        ThreadwiseWelford<AccDataType, ThreadReduceSrcDesc_M_K, ThreadReduceDstDesc_M, false>;
+    using ThreadwiseWelford2 =
+        ThreadwiseWelford<AccDataType, ThreadReduceSrcDesc_M_K, ThreadReduceDstDesc_M, true>;
 
     using BlockwiseWelford = BlockwiseWelford<AccDataType,
                                               BlockSize,
@@ -205,16 +207,17 @@ struct GridwiseMultiblockWelfordFirstHalf
         auto welford_count_global_val_buf = make_dynamic_buffer<AddressSpaceEnum::Global>(
             p_welford_count, mean_var_count_grid_desc_m_g.GetElementSpaceSize());
 
-        auto threadwise_welford = ThreadwiseWelford();
-        threadwise_welford.max_count_ =
-            get_reduce_count_per_thread(block_local_id, thread_k_cluster_id);
-
         static_for<0, MThreadSliceSize, 1>{}([&](auto I) {
             welford_mean_thread_buf(I) = type_convert<AccDataType>(0.0f);
             welford_var_thread_buf(I)  = type_convert<AccDataType>(0.0f);
         });
 
-        for(index_t reducedTiles = 0; reducedTiles < num_k_block_tile_iteration; ++reducedTiles)
+        const index_t max_count = get_reduce_count_per_thread(block_local_id, thread_k_cluster_id);
+        const index_t num_k_full_iteration = max_count / KThreadSliceSize;
+
+        auto threadwise_welford_1 = ThreadwiseWelford1();
+
+        for(index_t reducedTiles = 0; reducedTiles < num_k_full_iteration; ++reducedTiles)
         {
             threadwise_x_load.Run(x_grid_desc_m_k,
                                   x_global_val_buf,
@@ -223,14 +226,30 @@ struct GridwiseMultiblockWelfordFirstHalf
                                   x_thread_buf);
 
             threadwise_x_load.MoveSrcSliceWindow(x_grid_desc_m_k, thread_copy_fwd_step_m_k);
-            threadwise_welford.Run(x_thread_buf, welford_mean_thread_buf, welford_var_thread_buf);
+            threadwise_welford_1.Run(x_thread_buf, welford_mean_thread_buf, welford_var_thread_buf);
+        }
+
+        auto threadwise_welford_2       = ThreadwiseWelford2();
+        threadwise_welford_2.cur_count_ = threadwise_welford_1.cur_count_;
+        threadwise_welford_2.max_count_ = max_count;
+
+        if(threadwise_welford_2.cur_count_ < threadwise_welford_2.max_count_)
+        {
+            threadwise_x_load.Run(x_grid_desc_m_k,
+                                  x_global_val_buf,
+                                  thread_buffer_desc_m_k,
+                                  make_tuple(I0, I0),
+                                  x_thread_buf);
+
+            threadwise_x_load.MoveSrcSliceWindow(x_grid_desc_m_k, thread_copy_fwd_step_m_k);
+            threadwise_welford_2.Run(x_thread_buf, welford_mean_thread_buf, welford_var_thread_buf);
         }
 
         static_for<0, MThreadSliceSize, 1>{}([&](auto I) {
             if constexpr(I > 0)
                 block_sync_lds();
 
-            welford_count_thread_buf(I) = threadwise_welford.cur_count_;
+            welford_count_thread_buf(I) = threadwise_welford_2.cur_count_;
             BlockwiseWelford::Run(
                 welford_mean_thread_buf(I), welford_var_thread_buf(I), welford_count_thread_buf(I));
         });

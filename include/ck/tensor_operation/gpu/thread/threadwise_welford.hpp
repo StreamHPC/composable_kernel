@@ -13,7 +13,10 @@ namespace ck {
 //  3) XBuffer is static buffer
 //  4) MeanBuffer is static buffer
 //  5) VarBuffer is static buffer
-template <typename T, typename XThreadDesc_M_K, typename MeanVarThreadDesc_M>
+template <typename T,
+          typename XThreadDesc_M_K,
+          typename MeanVarThreadDesc_M,
+          bool CheckCount = true>
 struct ThreadwiseWelford
 {
     static constexpr auto x_thread_desc_m_k      = XThreadDesc_M_K{};
@@ -53,7 +56,7 @@ struct ThreadwiseWelford
         // FIXME - Better naming for var_buf_m
 
         static_for<0, thread_x_length_k, 1>{}([&](auto iK) {
-            if(cur_count_ < max_count_)
+            if(!CheckCount || cur_count_ < max_count_)
             {
                 ++cur_count_;
 
