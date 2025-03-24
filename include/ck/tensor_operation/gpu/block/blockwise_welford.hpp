@@ -10,11 +10,9 @@ namespace ck {
 
 // clang-format off
 // Assume:
-//  1) work_buffer is buffer (typically LDS) allocated outside as workspace
-//  2) work_buffer has T elements, and space size is no less than 3*BlockSize
-//  3) mean_value, var_value and count is the input data in vgpr from each thread
-//  4) mean_value, var_value and count is the over-written reduced output in vgpr for each thread
-//  5) Merge mean and M from ThreadwiseWelford
+//  1) mean_value, var_value and count is the input data in vgpr from each thread
+//  2) mean_value, var_value and count is the over-written reduced output in vgpr for each thread
+//  3) Merge mean and M from ThreadwiseWelford
 // clang-format on
 template <typename T,
           index_t BlockSize,
@@ -80,19 +78,15 @@ struct BlockwiseWelford
                 index_t offset2 = block_buf_desc_m_k.CalculateOffset(thread_cluster_idx +
                                                                      make_tuple(0, indOffset));
 
-                T mean1              = mean_block_buf[offset1];
-                T var1               = var_block_buf[offset1];
-                CountDataType count1 = count_block_buf[offset1];
-
                 T mean2              = mean_block_buf[offset2];
                 T var2               = var_block_buf[offset2];
                 CountDataType count2 = count_block_buf[offset2];
 
-                Merge(mean1, var1, count1, mean2, var2, count2);
+                Merge(mean_value, var_value, count, mean2, var2, count2);
 
-                mean_block_buf[offset1]  = mean1;
-                var_block_buf[offset1]   = var1;
-                count_block_buf[offset1] = count1;
+                mean_block_buf[offset1]  = mean_value;
+                var_block_buf[offset1]   = var_value;
+                count_block_buf[offset1] = count;
             }
 
             block_sync_lds();

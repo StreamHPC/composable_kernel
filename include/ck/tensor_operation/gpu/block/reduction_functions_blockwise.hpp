@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2018-2023, Advanced Micro Devices, Inc. All rights reserved.
+// Copyright (c) 2018-2025, Advanced Micro Devices, Inc. All rights reserved.
 
 #pragma once
 
@@ -54,7 +54,9 @@ struct PartitionedBlockwiseReduction
         const auto thread_m_cluster_id = thread_cluster_idx[Number<0>{}];
         const auto thread_k_cluster_id = thread_cluster_idx[Number<1>{}];
 
-        work_buffer(block_buf_desc_m_k.CalculateOffset(thread_cluster_idx)) = in_out_value;
+        index_t offset1      = block_buf_desc_m_k.CalculateOffset(thread_cluster_idx);
+        AccDataType opData1  = in_out_value;
+        work_buffer(offset1) = opData1;
 
         __syncthreads();
 
@@ -63,11 +65,9 @@ struct PartitionedBlockwiseReduction
 
             if(thread_k_cluster_id < indOffset)
             {
-                index_t offset1 = block_buf_desc_m_k.CalculateOffset(thread_cluster_idx);
                 index_t offset2 = block_buf_desc_m_k.CalculateOffset(thread_cluster_idx +
                                                                      make_tuple(0, indOffset));
 
-                AccDataType opData1 = work_buffer[offset1];
                 AccDataType opData2 = work_buffer[offset2];
                 Accumulation::Calculate(opData1, opData2);
                 work_buffer(offset1) = opData1;
@@ -126,7 +126,9 @@ struct PartitionedBlockwiseReduction_v2
         const auto thread_m_cluster_id = thread_cluster_idx[Number<0>{}];
         const auto thread_k_cluster_id = thread_cluster_idx[Number<1>{}];
 
-        work_buffer(block_buf_desc_m_k.CalculateOffset(thread_cluster_idx)) = in_out_value;
+        index_t offset1      = block_buf_desc_m_k.CalculateOffset(thread_cluster_idx);
+        AccDataType opData1  = in_out_value;
+        work_buffer(offset1) = opData1;
 
         __syncthreads();
 
@@ -135,11 +137,9 @@ struct PartitionedBlockwiseReduction_v2
 
             if(thread_k_cluster_id < indOffset)
             {
-                index_t offset1 = block_buf_desc_m_k.CalculateOffset(thread_cluster_idx);
                 index_t offset2 = block_buf_desc_m_k.CalculateOffset(thread_cluster_idx +
                                                                      make_tuple(0, indOffset));
 
-                AccDataType opData1 = work_buffer[offset1];
                 AccDataType opData2 = work_buffer[offset2];
                 Accumulation::Calculate(opData1, opData2);
                 work_buffer(offset1) = opData1;
