@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2018-2023, Advanced Micro Devices, Inc. All rights reserved.
+// Copyright (c) 2018-2025, Advanced Micro Devices, Inc. All rights reserved.
 
 #pragma once
 
@@ -808,7 +808,8 @@ struct DeviceBatchNormFwdImpl : public DeviceBatchNormFwd<XDataType,
         auto str = std::stringstream();
 
         // clang-format off
-        str << "DeviceBatchNormFwdImpl<" << BlockSize << ",";
+        str << "DeviceBatchNormFwdImpl<" << (UseMultiblockInK ? "true" : "false") << ",";
+        str << BlockSize << ",";
         str << "M_C" << MThreadClusterSize << "_S" << MThreadSliceSize << ",";
         str << "K_C" << KThreadClusterSize << "_S" << KThreadSliceSize << ",";
         str << "XSrcYDstVectorDim_" << XSrcYDstVectorDim  << ",";
