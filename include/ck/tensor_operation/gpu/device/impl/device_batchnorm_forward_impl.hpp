@@ -18,6 +18,7 @@
 #include "ck/host_utility/device_prop.hpp"
 #include "ck/host_utility/kernel_launch.hpp"
 #include "ck/host_utility/hip_check_error.hpp"
+#include "ck/host_utility/stream_utility.hpp"
 
 namespace ck {
 namespace tensor_operation {
@@ -238,33 +239,44 @@ struct DeviceBatchNormFwdImpl : public DeviceBatchNormFwd<XDataType,
                 (resultRunningMean != nullptr && resultRunningVariance != nullptr);
             saveMeanInvVariance_ = (resultSaveMean != nullptr && resultSaveInvVariance_ != nullptr);
 
+            const int invariant_tiles = (invariant_length_ + M_BlockTileSize - 1) / M_BlockTileSize;
+
             if(UseMultiblockInK)
             {
-                int iterations = 1;
-                while(true)
-                {
-                    int testBlkGroupSize = (reduce_length_ + (K_BlockTileSize * iterations) - 1) /
-                                           (K_BlockTileSize * iterations);
+                hipDeviceProp_t dev_prop;
+                hipDevice_t dev;
+                hip_check_error(hipGetDevice(&dev));
+                hip_check_error(hipGetDeviceProperties(&dev_prop, dev));
+                const int cu_count = dev_prop.multiProcessorCount;
 
-                    // we want the blkGroupSize be not more than 16
-                    if(testBlkGroupSize <= 16)
-                        break;
+                const int target_threads_per_cu = 1024;
+                const int blocks_per_cu         = target_threads_per_cu / BlockSize;
+                const int max_blocks            = cu_count * blocks_per_cu;
+                const int max_reduce_blocks =
+                    std::min(cu_count, (max_blocks + invariant_tiles - 1) / invariant_tiles);
 
-                    iterations++;
-                };
+                numBlockTileIteration_ =
+                    (reduce_length_ + (max_reduce_blocks * K_BlockTileSize) - 1) /
+                    (max_reduce_blocks * K_BlockTileSize);
+                blkGroupSize_ = (reduce_length_ + (K_BlockTileSize * numBlockTileIteration_) - 1) /
+                                (K_BlockTileSize * numBlockTileIteration_);
 
-                blkGroupSize_ = (reduce_length_ + (K_BlockTileSize * iterations) - 1) /
-                                (K_BlockTileSize * iterations);
-
-                numBlockTileIteration_ = iterations;
+                // It is found that:
+                // 1) gfx1030 does not support the GLC enabled vector load/store, so using the
+                //    two-kernel method for gfx1030
+                // 2) Profiler on gfx908 could hang even though it works when running examples
+                // 3) Single-kernel method works on gfx1100, but the performance it not better
+                //    than two-kernel method (due to more warps participating the barrier)
+                supportSingleKernel_ =
+                    (ck::get_device_name() == "gfx90a") && blkGroupSize_ <= cu_count;
             }
             else
             {
                 blkGroupSize_          = 1;
                 numBlockTileIteration_ = (reduce_length_ + K_BlockTileSize - 1) / K_BlockTileSize;
-            };
+            }
 
-            gridSize_ = (invariant_length_ + M_BlockTileSize - 1) / M_BlockTileSize * blkGroupSize_;
+            gridSize_ = invariant_tiles * blkGroupSize_;
 
             x_grid_desc_m_k_ =
                 MakeXY2dDescriptor(xyLengths_, xStrides_, blkGroupSize_, numBlockTileIteration_);
@@ -309,6 +321,7 @@ struct DeviceBatchNormFwdImpl : public DeviceBatchNormFwd<XDataType,
         long_index_t reduce_length_;
 
         int blkGroupSize_;
+        bool supportSingleKernel_;
         int numBlockTileIteration_;
         size_t gridSize_;
 
@@ -345,10 +358,13 @@ struct DeviceBatchNormFwdImpl : public DeviceBatchNormFwd<XDataType,
             workspace_size +=
                 pArg_->invariant_length_ * pArg_->blkGroupSize_ * sizeof(int32_t) + 64;
 
-            // workspace for barrier objects, each barrier object consists of two integers
-            // TODO: allocate barrier object memory globally to reuse it by other operators
-            workspace_size += (pArg_->invariant_length_ + M_BlockTileSize - 1) / M_BlockTileSize *
-                              sizeof(int) * 2;
+            if(pArg_->supportSingleKernel_)
+            {
+                // workspace for barrier objects, each barrier object consists of two integers
+                // TODO: allocate barrier object memory globally to reuse it by other operators
+                workspace_size += (pArg_->invariant_length_ + M_BlockTileSize - 1) /
+                                  M_BlockTileSize * sizeof(int) * 2;
+            }
         }
 
         return (workspace_size);
@@ -385,18 +401,21 @@ struct DeviceBatchNormFwdImpl : public DeviceBatchNormFwd<XDataType,
             pArg_->workspace_count_ =
                 reinterpret_cast<char*>(pArg_->workspace_variance_) + variance_space_sz;
 
-            index_t count_space_sz =
-                pArg_->invariant_length_ * pArg_->blkGroupSize_ * sizeof(int32_t);
+            if(pArg_->supportSingleKernel_)
+            {
+                index_t count_space_sz =
+                    pArg_->invariant_length_ * pArg_->blkGroupSize_ * sizeof(int32_t);
 
-            count_space_sz = math::integer_least_multiple(count_space_sz, 64);
+                count_space_sz = math::integer_least_multiple(count_space_sz, 64);
 
-            pArg_->control_ = reinterpret_cast<char*>(pArg_->workspace_count_) + count_space_sz;
+                pArg_->control_ = reinterpret_cast<char*>(pArg_->workspace_count_) + count_space_sz;
 
-            index_t control_space_sz = (pArg_->invariant_length_ + M_BlockTileSize - 1) /
-                                       M_BlockTileSize * sizeof(int) * 2;
+                index_t control_space_sz = (pArg_->invariant_length_ + M_BlockTileSize - 1) /
+                                           M_BlockTileSize * sizeof(int) * 2;
 
-            hip_check_error(hipMemset(pArg_->control_, 0, control_space_sz));
-        };
+                hip_check_error(hipMemset(pArg_->control_, 0, control_space_sz));
+            }
+        }
     };
 
     struct Invoker : public BaseInvoker
@@ -489,13 +508,8 @@ struct DeviceBatchNormFwdImpl : public DeviceBatchNormFwd<XDataType,
                                                                    BiasSrcVectorSize,
                                                                    MeanVarSrcDstVectorSize>;
 
-                // It is found that:
-                // 1) gfx1030 does not support the GLC enabled vector load/store, so using the
-                //    two-kernel method for gfx1030
-                // 2) Profiler on gfx908 could hang even though it works when running examples
-                // 3) Single-kernel method works on gfx1100, but the performance it not better
-                //    than two-kernel method (due to more warps participating the barrier)
-                if(ck::get_device_name() == "gfx90a")
+                if(arg.supportSingleKernel_ &&
+                   arg.blkGroupSize_ <= getAvailableComputeUnitCount(stream_config))
                 {
                     const auto kern_multiblock_batchnorm_fwd_ =
                         kernel_multiblock_batchnorm_forward<GridwiseMultiblockBatchNormForward_,

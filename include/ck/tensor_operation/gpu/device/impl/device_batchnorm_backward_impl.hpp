@@ -244,33 +244,35 @@ struct DeviceBatchNormBwdImpl : public DeviceBatchNormBwd<XDataType,
 
             haveSavedMeanInvVar_ = (p_savedMean_ != nullptr && p_savedInvVar_ != nullptr);
 
+            const int invariant_tiles = (invariant_length + M_BlockTileSize - 1) / M_BlockTileSize;
+
             if(UseMultiblockInK)
             {
-                int iterations = 1;
-                while(true)
-                {
-                    int testBlkGroupSize = (reduce_length + (K_BlockTileSize * iterations) - 1) /
-                                           (K_BlockTileSize * iterations);
+                hipDeviceProp_t dev_prop;
+                hipDevice_t dev;
+                hip_check_error(hipGetDevice(&dev));
+                hip_check_error(hipGetDeviceProperties(&dev_prop, dev));
+                const int cu_count = dev_prop.multiProcessorCount;
 
-                    // we want the blkGroupSize be not more than 128
-                    if(testBlkGroupSize <= 128)
-                        break;
+                const int target_threads_per_cu = 1024;
+                const int blocks_per_cu         = target_threads_per_cu / BlockSize;
+                const int max_blocks            = cu_count * blocks_per_cu;
+                const int max_reduce_blocks =
+                    std::min(cu_count, (max_blocks + invariant_tiles - 1) / invariant_tiles);
 
-                    iterations++;
-                };
-
-                blkGroupSize = (reduce_length + (K_BlockTileSize * iterations) - 1) /
-                               (K_BlockTileSize * iterations);
-
-                numBlockTileIteration = iterations;
+                numBlockTileIteration =
+                    (reduce_length + (max_reduce_blocks * K_BlockTileSize) - 1) /
+                    (max_reduce_blocks * K_BlockTileSize);
+                blkGroupSize = (reduce_length + (K_BlockTileSize * numBlockTileIteration) - 1) /
+                               (K_BlockTileSize * numBlockTileIteration);
             }
             else
             {
                 blkGroupSize          = 1;
                 numBlockTileIteration = (reduce_length + K_BlockTileSize - 1) / K_BlockTileSize;
-            };
+            }
 
-            gridSize = (invariant_length + M_BlockTileSize - 1) / M_BlockTileSize * blkGroupSize;
+            gridSize = invariant_tiles * blkGroupSize;
 
             x_grid_desc_m_k =
                 MakeXY2dDescriptor(xyLengths_, xStrides_, blkGroupSize, numBlockTileIteration);
