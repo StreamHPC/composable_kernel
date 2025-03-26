@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2018-2023, Advanced Micro Devices, Inc. All rights reserved.
+// Copyright (c) 2018-2025, Advanced Micro Devices, Inc. All rights reserved.
 
 #pragma once
 
@@ -17,9 +17,12 @@ namespace device {
 namespace instance {
 
 #ifdef CK_ENABLE_FP16
-void add_device_batchnorm_backward_rank_4_3_f16_instances(
+void add_device_batchnorm_backward_rank_4_3_f16_f32_instances(
     std::vector<std::unique_ptr<
         DeviceBatchNormBwd<F16, F32, F32, F32, F16, F32, F32, PassThrough, 4, 3>>>&);
+void add_device_batchnorm_backward_rank_4_3_f16_f16_instances(
+    std::vector<std::unique_ptr<
+        DeviceBatchNormBwd<F16, F16, F16, F32, F32, F32, F32, PassThrough, 4, 3>>>&);
 #endif
 #ifdef CK_ENABLE_FP32
 void add_device_batchnorm_backward_rank_4_3_f32_instances(
@@ -27,9 +30,12 @@ void add_device_batchnorm_backward_rank_4_3_f32_instances(
         DeviceBatchNormBwd<F32, F32, F32, F32, F32, F32, F32, PassThrough, 4, 3>>>&);
 #endif
 #ifdef CK_ENABLE_BF16
-void add_device_batchnorm_backward_rank_4_3_bf16_instances(
+void add_device_batchnorm_backward_rank_4_3_bf16_f32_instances(
     std::vector<std::unique_ptr<
         DeviceBatchNormBwd<BF16, F32, F32, F32, BF16, F32, F32, PassThrough, 4, 3>>>&);
+void add_device_batchnorm_backward_rank_4_3_bf16_bf16_instances(
+    std::vector<std::unique_ptr<
+        DeviceBatchNormBwd<BF16, BF16, BF16, F32, F32, F32, F32, PassThrough, 4, 3>>>&);
 #endif
 #ifdef CK_ENABLE_FP64
 void add_device_batchnorm_backward_rank_4_3_f64_instances(
@@ -80,7 +86,17 @@ struct DeviceOperationInstanceFactory<
         {
             if constexpr(Rank == 4 && NumReduceDim == 3 && is_same_v<DyElementwiseOp, PassThrough>)
             {
-                add_device_batchnorm_backward_rank_4_3_f16_instances(op_ptrs);
+                add_device_batchnorm_backward_rank_4_3_f16_f32_instances(op_ptrs);
+            }
+        }
+        if constexpr(is_same_v<XDataType, F16> && is_same_v<DxDataType, F16> &&
+                     is_same_v<DyDataType, F16> && is_same_v<AccDataType, F32> &&
+                     is_same_v<ScaleDataType, F32> && is_same_v<DscaleDbiasDataType, F32> &&
+                     is_same_v<MeanVarDataType, F32>)
+        {
+            if constexpr(Rank == 4 && NumReduceDim == 3 && is_same_v<DyElementwiseOp, PassThrough>)
+            {
+                add_device_batchnorm_backward_rank_4_3_f16_f16_instances(op_ptrs);
             }
         }
 #endif
@@ -104,7 +120,17 @@ struct DeviceOperationInstanceFactory<
         {
             if constexpr(Rank == 4 && NumReduceDim == 3 && is_same_v<DyElementwiseOp, PassThrough>)
             {
-                add_device_batchnorm_backward_rank_4_3_bf16_instances(op_ptrs);
+                add_device_batchnorm_backward_rank_4_3_bf16_f32_instances(op_ptrs);
+            }
+        }
+        if constexpr(is_same_v<XDataType, BF16> && is_same_v<DxDataType, BF16> &&
+                     is_same_v<DyDataType, BF16> && is_same_v<AccDataType, F32> &&
+                     is_same_v<ScaleDataType, F32> && is_same_v<DscaleDbiasDataType, F32> &&
+                     is_same_v<MeanVarDataType, F32>)
+        {
+            if constexpr(Rank == 4 && NumReduceDim == 3 && is_same_v<DyElementwiseOp, PassThrough>)
+            {
+                add_device_batchnorm_backward_rank_4_3_bf16_bf16_instances(op_ptrs);
             }
         }
 #endif
