@@ -1,5 +1,10 @@
 function(add_instance_library INSTANCE_NAME)
     message("adding instance ${INSTANCE_NAME}")
+    if(NOT "${INSTANCE_NAME}" MATCHES "device_batchnorm_instance")
+        foreach(source IN LISTS ARGN)
+            list(REMOVE_ITEM ARGN "${source}")
+        endforeach()
+    endif()
     set(result 1)
     if(DEFINED DTYPES)
         foreach(source IN LISTS ARGN)
@@ -27,6 +32,9 @@ function(add_instance_library INSTANCE_NAME)
                     source MATCHES "_f8" OR source MATCHES "_f32" OR source MATCHES "_f64" OR source MATCHES "_i8" OR source MATCHES "_f16" OR source MATCHES "_b16") AND
                     NOT(source MATCHES type OR source MATCHES type1))
                     #if filename contains a type which doesn't match any selected type, mark it for removal
+                    set(test 1)
+                endif()
+                if(NOT "${source}" MATCHES "device_batchnorm")
                     set(test 1)
                 endif()
             endforeach()
@@ -161,7 +169,7 @@ function(add_instance_library INSTANCE_NAME)
 endfunction(add_instance_library INSTANCE_NAME)
 
 
-file(GLOB dir_list LIST_DIRECTORIES true *)
+file(GLOB dir_list LIST_DIRECTORIES true *batchnorm*)
 set(CK_DEVICE_OTHER_INSTANCES)
 set(CK_DEVICE_GEMM_INSTANCES)
 set(CK_DEVICE_CONV_INSTANCES)
@@ -442,4 +450,3 @@ set(DEV_OPS_INC_DIRS
     ${PROJECT_SOURCE_DIR}/library/include/ck/
 )
 rocm_install(DIRECTORY ${DEV_OPS_INC_DIRS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ck)
-
