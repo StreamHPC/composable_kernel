@@ -312,6 +312,17 @@ struct BlockwiseGemmXdlops_k0mk1_k0nk1_m0n0m1n1m2m3m4n2_v1
                                make_tuple(I0, I0, I0, I0),
                                a_thread_buf);
 
+            if (threadIdx.x == 0 && blockIdx.x == 0 && blockIdx.y == 0) {
+                printf("a:\n");
+                for (int j = 0; j < 32; ++j) {
+                    for (int i = 0; i < 32; ++i) {
+                        printf("%i ", int(a_block_buf[i]));
+                    }
+                    printf("\n");
+                }
+                printf("\n");
+            }
+
             static_for<0, NRepeat, 1>{}([&](auto n0) {
                 // read B
                 b_thread_copy_.Run(b_block_desc_n0_n1_n2_k,
@@ -320,6 +331,17 @@ struct BlockwiseGemmXdlops_k0mk1_k0nk1_m0n0m1n1m2m3m4n2_v1
                                    b_thread_desc_,
                                    make_tuple(I0, I0, I0, I0),
                                    b_thread_buf);
+
+                if (threadIdx.x == 0 && blockIdx.x == 0 && blockIdx.y == 0) {
+                    printf("b:\n");
+                    for (int j = 0; j < 32; ++j) {
+                        for (int i = 0; i < 32; ++i) {
+                            printf("%i ", int(b_block_buf[i]));
+                        }
+                        printf("\n");
+                    }
+                    printf("\n");
+                }
 
                 static_for<0, KPerThread, KPack>{}([&](auto k) {
                     vector_type<ComputeTypeA, KPack> a_thread_vec;

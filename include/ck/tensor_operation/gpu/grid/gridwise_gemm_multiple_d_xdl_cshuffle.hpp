@@ -950,6 +950,19 @@ struct GridwiseGemmMultipleD_xdl_cshuffle
                 // make sure it's safe to read from LDS
                 block_sync_lds();
 
+                // if (threadIdx.x == 0 /*&& blockIdx.x == 0 && blockIdx.y == 0*/) {
+                //     printf("c:\n");
+                //     for (int j = 0; j < 32; ++j) {
+                //         for (int i = 0; i < 32; ++i) {
+                //             if (c_shuffle_block_buf[i] > 0) {
+                //                 printf("%i ", int(c_shuffle_block_buf[i]));
+                //             }
+                //         }
+                //         printf("\n");
+                //     }
+                //     printf("\n");
+                // }
+
                 // each block copy its data from LDS to global
                 cde_block_copy_lds_and_global.Run(
                     c_ds_desc_refs,

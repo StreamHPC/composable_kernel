@@ -295,6 +295,16 @@ struct ThreadwiseTensorSliceTransfer_v3r1
                             src_coord_.GetOffset() / PackedSize + LoadOffset, true)};
 
                     static_for<0, VectorLoadSize / elem_op_vec_len, 1>{}([&](auto idx) {
+                        // if (is_src_valid /*&&
+                        //     src_vector.template AsType<src_elem_op_vec_t>()[idx] > 0*/)
+                        // {
+                        //     printf("%i idx seq: %i %i %i\n  offset: %i\n  val: %i\n", nDim,
+                        //         src_data_idx_seq[0], src_data_idx_seq[1], src_data_idx_seq[2],
+                        //         int(src_coord_.GetOffset() / PackedSize + LoadOffset),
+                        //         int(clear)
+                        //     );
+                        // }
+
                         // apply the src elementwise op and convert to DstData under the hood if
                         // needed
                         src_element_op_(
@@ -324,6 +334,13 @@ struct ThreadwiseTensorSliceTransfer_v3r1
                 return move_on_dim_;
             }
             ();
+
+            // auto const &tmp1 = src_coord_.GetVisibleIndex();
+            // auto const tmpVal = src_buf.template Get<vector_type<int, 2>>(src_coord_.GetOffset(), true);
+            // if (tmpVal[0] > 0 || tmpVal[1] > 0) {
+            //     printf("idx hidden: %i %i %i val: %i %i\n", tmp1.At(I0), tmp1.At(I1), tmp1.At(I2),
+            //         int(tmpVal[0]), int(tmpVal[1]));
+            // }
 
             // move src coord
             static_for<0, nDim, 1>{}([&](auto i) {
@@ -635,6 +652,21 @@ struct ThreadwiseTensorSliceTransfer_v3r1
                 dst_coord_.GetOffset() / PackedSize,
                 is_dst_valid,
                 dst_vector_container.template AsType<dst_vector_t>()[I0]);
+
+            // if (is_dst_valid && 
+            //     (dst_vector_container.template AsType<dst_vector_t>()[I0][0] > 0 ||
+            //     dst_vector_container.template AsType<dst_vector_t>()[I0][1] > 0 ||
+            //     dst_vector_container.template AsType<dst_vector_t>()[I0][2] > 0 ||
+            //     dst_vector_container.template AsType<dst_vector_t>()[I0][3] > 0))
+            // {
+            //     printf("in: %i %i %i %i %i\n",
+            //         int(dst_coord_.GetOffset() / PackedSize), 
+            //         int(dst_vector_container.template AsType<dst_vector_t>()[I0][0]),
+            //         int(dst_vector_container.template AsType<dst_vector_t>()[I0][1]),
+            //         int(dst_vector_container.template AsType<dst_vector_t>()[I0][2]),
+            //         int(dst_vector_container.template AsType<dst_vector_t>()[I0][3])
+            //     );
+            // }
 
             constexpr auto move_on_dim = [&]() constexpr
             {

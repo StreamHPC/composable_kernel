@@ -74,7 +74,8 @@ template <typename GridwiseGemm,
           typename CDEElementwiseOp,
           typename ComputePtrOffsetOfBatch,
           typename ComputePtrOffsetOfN,
-          InMemoryDataOperationEnum OutElementOp>
+          InMemoryDataOperationEnum OutElementOp,
+          index_t NumGroupsToMerge>
 __global__ void
 #if CK_USE_LAUNCH_BOUNDS
     __launch_bounds__(CK_MAX_THREAD_PER_BLOCK, CK_MIN_BLOCK_PER_CU)
@@ -96,7 +97,7 @@ __global__ void
 #if(!defined(__HIP_DEVICE_COMPILE__) || defined(__gfx9__))
     // offset base pointer for each work-group
     const index_t block_args_id = __builtin_amdgcn_readfirstlane(blockIdx.x);
-    const index_t g_idx         = __builtin_amdgcn_readfirstlane(blockIdx.y);
+    const index_t g_idx         = __builtin_amdgcn_readfirstlane(blockIdx.y * NumGroupsToMerge);
     const index_t n_idx         = __builtin_amdgcn_readfirstlane(blockIdx.z / KBatch);
     const index_t k_idx         = __builtin_amdgcn_readfirstlane(blockIdx.z - n_idx * KBatch);
 
@@ -253,7 +254,8 @@ template <index_t NDimSpatial,
           typename AComputeType                          = ADataType,
           typename BComputeType                          = AComputeType,
           index_t MaxTransposeTransferInScalarPerVector  = 1,
-          index_t MaxTransposeTransferOutScalarPerVector = 1>
+          index_t MaxTransposeTransferOutScalarPerVector = 1,
+          index_t NumGroupsToMerge                       = 1>
 struct DeviceGroupedConvBwdDataMultipleD_Xdl_CShuffle_v1
     : public DeviceGroupedConvBwdDataMultipleD<NDimSpatial,
                                                ALayout,    // output image
@@ -273,6 +275,8 @@ struct DeviceGroupedConvBwdDataMultipleD_Xdl_CShuffle_v1
     // TODO: Extend support for more spatial dimensions.
     static_assert(NDimSpatial == 2 || NDimSpatial == 3,
                   "wrong! only implemented for 2D and 3D now");
+
+    static_assert(NumGroupsToMerge >= 1);
 
     // MaxGroupedGemmGroupsNum  is used to specify number of gemm args in compile time. With this
     // implementation we can avoid copy data to workspace before kernel launch since number of
@@ -329,7 +333,8 @@ struct DeviceGroupedConvBwdDataMultipleD_Xdl_CShuffle_v1
                                                                      ELayoutAfterTranspose,
                                                                      true, /*SplitConvN*/
                                                                      ABDataType,
-                                                                     EDataType>;
+                                                                     EDataType,
+                                                                     NumGroupsToMerge>;
 
     static auto
     GetDummyABDsEGridDescriptor(const ConvToGemmBwdDataTransform& conv_to_gemm_transform)
@@ -357,7 +362,8 @@ struct DeviceGroupedConvBwdDataMultipleD_Xdl_CShuffle_v1
                                                   DLayout,
                                                   true, /*SplitConvN*/
                                                   ABDataType,
-                                                  DDataType>;
+                                                  DDataType,
+                                                  NumGroupsToMerge>;
                 return ConvToGemmBwdDataTransformD{}.MakeCDescriptor_M_N();
             },
             Number<NumDTensor>{});
@@ -629,6 +635,7 @@ struct DeviceGroupedConvBwdDataMultipleD_Xdl_CShuffle_v1
                     e_g_n_c_wis_lengths_.begin(), NDimSpatial + I3, 1, std::multiplies<>()) *
                 sizeof(EDataType);
 
+            // in NHWGC
             std::array<index_t, NDimSpatial + 3> a_g_n_k_wos_strides_transposed =
                 conv_ngchw_to_nhwgc_transformer.TransposeInOutStrides(a_g_n_k_wos_lengths,
                                                                       a_g_n_k_wos_strides);
@@ -762,9 +769,10 @@ struct DeviceGroupedConvBwdDataMultipleD_Xdl_CShuffle_v1
                                                               ALayoutAfterTranspose,
                                                               BLayoutAfterTranspose,
                                                               DLayout,
-                                                              true, /*SplitConvN*/
+                                                              /*true*/false, /*SplitConvN*/
                                                               ABDataType,
-                                                              DDataType>;
+                                                              DDataType,
+                                                              NumGroupsToMerge>;
                             ConvToGemmBwdDataTransformD conv_to_gemm_transform_d{
                                 a_g_n_k_wos_lengths,
                                 a_g_n_k_wos_strides_transposed,
@@ -840,9 +848,12 @@ struct DeviceGroupedConvBwdDataMultipleD_Xdl_CShuffle_v1
             gemms_grid_size_.push_back(grid_size);
 
             // A/B/Ds/E Batch Stride
-            compute_ptr_offset_of_batch_.BatchStrideA_ = a_g_n_k_wos_strides_transposed[0];
-            compute_ptr_offset_of_batch_.BatchStrideB_ = b_g_k_c_xs_strides_transposed[0];
-            compute_ptr_offset_of_batch_.BatchStrideE_ = e_g_n_c_wis_strides_transposed[0];
+            compute_ptr_offset_of_batch_.BatchStrideA_ =
+                a_g_n_k_wos_strides_transposed[0] * NumGroupsToMerge;
+            compute_ptr_offset_of_batch_.BatchStrideB_ =
+                b_g_k_c_xs_strides_transposed[0] * NumGroupsToMerge;
+            compute_ptr_offset_of_batch_.BatchStrideE_ =
+                e_g_n_c_wis_strides_transposed[0] * NumGroupsToMerge;
 
             compute_ptr_offset_of_n_.BatchStrideA_ =
                 a_g_n_k_wos_strides_transposed[1] * conv_N_per_block_;
@@ -1024,7 +1035,7 @@ struct DeviceGroupedConvBwdDataMultipleD_Xdl_CShuffle_v1
         {
             float ave_time = 0;
 
-            const index_t gdy = arg.num_group_;
+            const index_t gdy = arg.num_group_ / NumGroupsToMerge;
             const index_t gdz = arg.num_workgroups_per_Conv_N_ * arg.k_batch_;
 
             const ADataType* p_a_grid = arg.p_a_grid_;
@@ -1052,6 +1063,7 @@ struct DeviceGroupedConvBwdDataMultipleD_Xdl_CShuffle_v1
                 gemm_set_id++)
             {
                 const index_t gdx = arg.gemms_grid_size_[gemm_set_id];
+                printf("gdx, gdy, gdz: %i %i %i\n", gdx, gdy, gdz);
                 const index_t gemms_count_for_set =
                     gemm_set_id == arg.gemm_kernel_args_.size() - 1
                         ? arg.gemms_count_ - MaxGroupedGemmGroupsNum * gemm_set_id
@@ -1080,7 +1092,8 @@ struct DeviceGroupedConvBwdDataMultipleD_Xdl_CShuffle_v1
                         CDEElementwiseOp,
                         ComputePtrOffsetOfStridedBatch<I1, I1, NumDTensor>,
                         ComputePtrOffsetOfStridedBatch<I1, I1, I0>,
-                        ElementOp>;
+                        ElementOp,
+                        NumGroupsToMerge>;
 
                     return launch_and_time_kernel_with_preprocess(stream_config,
                                                                   clear_workspace,
@@ -1300,6 +1313,52 @@ struct DeviceGroupedConvBwdDataMultipleD_Xdl_CShuffle_v1
                 {
                     return false;
                 }
+            }
+        }
+
+        if constexpr(NumGroupsToMerge > 1)
+        {
+            // TODO: check the "tilde" thingy. Do I need to expect more elements in the containter?
+            const index_t GemmM = arg.a_grid_desc_m_k_container_[0].GetLength(I0);
+            const index_t GemmN = arg.b_grid_desc_n_k_container_[0].GetLength(I0);
+            // support only if whole M and N can be proccessed on one block
+            if(!(GemmM <= MPerBlock && GemmN <= NPerBlock))
+            {
+                // TODO: remove print
+                printf("Shape failed: %i <= %i && %i <= %i\n", GemmM, MPerBlock, GemmN, NPerBlock);
+                return false;
+            }
+            if(!(ConvC == 1))
+            {
+                return false;
+            }
+            if(ConvG % NumGroupsToMerge != 0)
+            {
+                return false;
+            }
+        }
+
+        // const bool is_w_pad_zero = arg.input_left_pads_[NDimSpatial - 1] == 0 &&
+        //                            arg.input_right_pads_[NDimSpatial - 1] == 0;
+        // const auto X                 = arg.filter_spatial_lengths_[NDimSpatial - 1];
+        // const bool XC_access_allowed = arg.Conv_G_ == 1 &&
+        //                                (arg.Conv_C_ * X) % BBlockTransferSrcScalarPerVector == 0 &&
+        //                                is_w_pad_zero;
+
+        if(!((ConvC % BBlockTransferSrcScalarPerVector == 0 /*|| XC_access_allowed*/) &&
+             ConvK % ABlockTransferSrcScalarPerVector == 0))
+        {
+            if(!(ConvK == 1 && arg.compute_ptr_offset_of_batch_.BatchStrideA_ == 1 &&
+                 NumGroupsToMerge > 1))
+            {
+                printf("cicc\n");
+                return false;
+            }
+            if(!(ConvC == 1 && arg.compute_ptr_offset_of_batch_.BatchStrideB_ == 1 &&
+                 NumGroupsToMerge > 1))
+            {
+                printf("cicc\n");
+                return false;
             }
         }
 
@@ -1573,7 +1632,8 @@ struct DeviceGroupedConvBwdDataMultipleD_Xdl_CShuffle_v1
             << ABlockTransferSrcScalarPerVector << ", "
             << BBlockTransferSrcScalarPerVector << ", "
             << CShuffleMXdlPerWavePerShuffle << ", "
-            << CShuffleNXdlPerWavePerShuffle;
+            << CShuffleNXdlPerWavePerShuffle << ", "
+            << "merge groups: " << NumGroupsToMerge;
 
             if constexpr(is_NGCHW_NGKHW<ELayout, BLayout, ALayout>() ||
                         is_NGCDHW_NGKDHW<ELayout, BLayout, ALayout>()) {

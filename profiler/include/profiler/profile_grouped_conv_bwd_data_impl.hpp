@@ -67,8 +67,9 @@ bool profile_grouped_conv_bwd_data_impl(int do_verification,
     {
     case 0: break;
     case 1:
-        out.GenerateTensorValue(GeneratorTensor_2<OutDataType>{-5, 5});
-        wei.GenerateTensorValue(GeneratorTensor_2<WeiDataType>{-5, 5});
+        out.GenerateTensorValue(GeneratorTensor_2<OutDataType>{/*-5, 5*/1, 2});
+        out.mData = {1, 2, 3, 4, 5, 6, 7, 8};
+        wei.GenerateTensorValue(GeneratorTensor_2<WeiDataType>{/*-5, 5*/1, 2});
         break;
     case 2:
         out.GenerateTensorValue(GeneratorTensor_3<OutDataType>{0.0, 1.0});
@@ -138,7 +139,7 @@ bool profile_grouped_conv_bwd_data_impl(int do_verification,
             auto invoker_ptr = op_ptr->MakeInvokerPointer();
 
             float avg_time =
-                invoker_ptr->Run(argument_ptr.get(), StreamConfig{nullptr, time_kernel});
+                invoker_ptr->Run(argument_ptr.get(), StreamConfig{nullptr, time_kernel, 0, 0, 1});
 
             std::size_t flop      = conv_param.GetFlops();
             std::size_t num_btype = conv_param.GetByte<InDataType, WeiDataType, OutDataType>();

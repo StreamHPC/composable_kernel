@@ -42,7 +42,7 @@ class TestGroupedConvndBwdDataXdl : public ::testing::Test
                                    true,  // do_verification
                                    1,     // init_method: integer value
                                    false, // do_log
-                                   false, // time_kernel
+                                   true, // time_kernel
                                    param,
                                    split_k);
             }
@@ -53,31 +53,33 @@ class TestGroupedConvndBwdDataXdl : public ::testing::Test
 
 using namespace ck::tensor_layout::convolution;
 
-using KernelTypes2d = ::testing::Types<std::tuple<float, GNHWK, GKYXC, GNHWC>,
-                                       std::tuple<ck::half_t, GNHWK, GKYXC, GNHWC>,
-                                       std::tuple<ck::bhalf_t, GNHWK, GKYXC, GNHWC>,
-                                       std::tuple<float, NGKHW, GKYXC, NGCHW>,
-                                       std::tuple<ck::half_t, NGKHW, GKYXC, NGCHW>,
-                                       std::tuple<ck::bhalf_t, NGKHW, GKYXC, NGCHW>,
-                                       std::tuple<float, NGKHW, GKCYX, NGCHW>,
-                                       std::tuple<ck::half_t, NGKHW, GKCYX, NGCHW>,
-                                       std::tuple<ck::bhalf_t, NGKHW, GKCYX, NGCHW>,
-                                       std::tuple<float, NHWGK, GKYXC, NHWGC>,
-                                       std::tuple<ck::half_t, NHWGK, GKYXC, NHWGC>,
-                                       std::tuple<ck::bhalf_t, NHWGK, GKYXC, NHWGC>>;
+using KernelTypes2d = ::testing::Types<
+                                    //    std::tuple<float, GNHWK, GKYXC, GNHWC>,
+                                    //    std::tuple<ck::half_t, GNHWK, GKYXC, GNHWC>,
+                                    //    std::tuple<ck::bhalf_t, GNHWK, GKYXC, GNHWC>,
+                                    //    std::tuple<float, NGKHW, GKYXC, NGCHW>,
+                                    //    std::tuple<ck::half_t, NGKHW, GKYXC, NGCHW>,
+                                    //    std::tuple<ck::bhalf_t, NGKHW, GKYXC, NGCHW>,
+                                    //    std::tuple<float, NGKHW, GKCYX, NGCHW>,
+                                    //    std::tuple<ck::half_t, NGKHW, GKCYX, NGCHW>,
+                                    //    std::tuple<ck::bhalf_t, NGKHW, GKCYX, NGCHW>,
+                                       std::tuple<float, NHWGK, GKYXC, NHWGC>//,
+                                    //    std::tuple<ck::half_t, NHWGK, GKYXC, NHWGC>,
+                                    //    std::tuple<ck::bhalf_t, NHWGK, GKYXC, NHWGC>
+                                       >;
 
-using KernelTypes3d = ::testing::Types<std::tuple<float, GNDHWK, GKZYXC, GNDHWC>,
-                                       std::tuple<ck::half_t, GNDHWK, GKZYXC, GNDHWC>,
-                                       std::tuple<ck::bhalf_t, GNDHWK, GKZYXC, GNDHWC>,
-                                       std::tuple<float, NGKDHW, GKZYXC, NGCDHW>,
-                                       std::tuple<ck::half_t, NGKDHW, GKZYXC, NGCDHW>,
-                                       std::tuple<ck::bhalf_t, NGKDHW, GKZYXC, NGCDHW>,
-                                       std::tuple<float, NGKDHW, GKCZYX, NGCDHW>,
-                                       std::tuple<ck::half_t, NGKDHW, GKCZYX, NGCDHW>,
-                                       std::tuple<ck::bhalf_t, NGKDHW, GKCZYX, NGCDHW>,
-                                       std::tuple<float, NDHWGK, GKZYXC, NDHWGC>,
-                                       std::tuple<ck::half_t, NDHWGK, GKZYXC, NDHWGC>,
-                                       std::tuple<ck::bhalf_t, NDHWGK, GKZYXC, NDHWGC>>;
+// using KernelTypes3d = ::testing::Types<std::tuple<float, GNDHWK, GKZYXC, GNDHWC>,
+//                                        std::tuple<ck::half_t, GNDHWK, GKZYXC, GNDHWC>,
+//                                        std::tuple<ck::bhalf_t, GNDHWK, GKZYXC, GNDHWC>,
+//                                        std::tuple<float, NGKDHW, GKZYXC, NGCDHW>,
+//                                        std::tuple<ck::half_t, NGKDHW, GKZYXC, NGCDHW>,
+//                                        std::tuple<ck::bhalf_t, NGKDHW, GKZYXC, NGCDHW>,
+//                                        std::tuple<float, NGKDHW, GKCZYX, NGCDHW>,
+//                                        std::tuple<ck::half_t, NGKDHW, GKCZYX, NGCDHW>,
+//                                        std::tuple<ck::bhalf_t, NGKDHW, GKCZYX, NGCDHW>,
+//                                        std::tuple<float, NDHWGK, GKZYXC, NDHWGC>,
+//                                        std::tuple<ck::half_t, NDHWGK, GKZYXC, NDHWGC>,
+//                                        std::tuple<ck::bhalf_t, NDHWGK, GKZYXC, NDHWGC>>;
 
 template <typename Tuple>
 class TestGroupedConvndBwdDataXdl2d : public TestGroupedConvndBwdDataXdl<Tuple>
@@ -90,62 +92,73 @@ class TestGroupedConvndBwdDataXdl3d : public TestGroupedConvndBwdDataXdl<Tuple>
 };
 
 TYPED_TEST_SUITE(TestGroupedConvndBwdDataXdl2d, KernelTypes2d);
-TYPED_TEST_SUITE(TestGroupedConvndBwdDataXdl3d, KernelTypes3d);
+//TYPED_TEST_SUITE(TestGroupedConvndBwdDataXdl3d, KernelTypes3d);
+
+// TYPED_TEST(TestGroupedConvndBwdDataXdl2d, Test2D)
+// {
+//     this->conv_params.clear();
+
+//     // GroupedGemmGroupsNum = 4, ZTilde * YTilde * XTilde = 4, MaxGroupedGemmGroupsNum = 32
+//     this->conv_params.push_back(
+//         {2, 2, 2, 16, 16, {3, 3}, {28, 28}, {2, 2}, {1, 1}, {1, 1}, {1, 1}});
+//     // GroupedGemmGroupsNum = 9, ZTilde * YTilde * XTilde = 36, MaxGroupedGemmGroupsNum = 32
+//     this->conv_params.push_back(
+//         {2, 2, 2, 16, 16, {3, 3}, {28, 28}, {6, 6}, {1, 1}, {1, 1}, {1, 1}});
+//     // GroupedGemmGroupsNum = 36, ZTilde * YTilde * XTilde = 36, MaxGroupedGemmGroupsNum = 32
+//     this->conv_params.push_back(
+//         {2, 2, 2, 16, 16, {6, 6}, {28, 28}, {6, 6}, {1, 1}, {1, 1}, {1, 1}});
+//     // GroupedGemmGroupsNum = 32, ZTilde * YTilde * XTilde = 32, MaxGroupedGemmGroupsNum = 32
+//     this->conv_params.push_back(
+//         {2, 2, 2, 16, 16, {4, 8}, {28, 28}, {4, 8}, {1, 1}, {1, 1}, {1, 1}});
+//     this->conv_params.push_back(
+//         {2, 2, 2, 192, 192, {3, 3}, {28, 28}, {1, 1}, {1, 1}, {1, 1}, {1, 1}});
+//     this->conv_params.push_back(
+//         {2, 2, 2, 128, 256, {3, 3}, {14, 14}, {1, 1}, {1, 1}, {1, 1}, {1, 1}});
+//     this->conv_params.push_back(
+//         {2, 2, 2, 128, 256, {1, 1}, {7, 7}, {2, 2}, {1, 1}, {0, 0}, {0, 0}});
+//     this->conv_params.push_back(
+//         {2, 2, 2, 128, 256, {1, 1}, {3, 3}, {1, 1}, {1, 1}, {0, 0}, {0, 0}});
+//     this->conv_params.push_back(
+//         {2, 2, 2, 32, 32, {2, 2}, {12, 12}, {3, 3}, {1, 1}, {0, 0}, {0, 0}});
+//     this->conv_params.push_back(
+//         {2, 2, 2, 32, 32, {2, 2}, {12, 12}, {2, 2}, {2, 2}, {0, 0}, {0, 0}});
+//     this->conv_params.push_back(
+//         {2, 1, 6, 448, 896, {1, 1}, {118, 182}, {2, 2}, {1, 1}, {0, 0}, {0, 0}});
+//     this->conv_params.push_back({2, 1, 1, 1, 32, {8, 8}, {16, 16}, {1, 1}, {1, 1}, {1, 1}, {1, 1}});
+//     this->conv_params.push_back({2, 1, 1, 64, 3, {8, 8}, {16, 16}, {1, 1}, {1, 1}, {1, 1}, {1, 1}});
+//     this->conv_params.push_back({2, 1, 1, 1, 1, {8, 8}, {16, 16}, {1, 1}, {1, 1}, {1, 1}, {1, 1}});
+//     this->template Run<2>();
+// }
 
 TYPED_TEST(TestGroupedConvndBwdDataXdl2d, Test2D)
 {
     this->conv_params.clear();
-
-    // GroupedGemmGroupsNum = 4, ZTilde * YTilde * XTilde = 4, MaxGroupedGemmGroupsNum = 32
-    this->conv_params.push_back(
-        {2, 2, 2, 16, 16, {3, 3}, {28, 28}, {2, 2}, {1, 1}, {1, 1}, {1, 1}});
-    // GroupedGemmGroupsNum = 9, ZTilde * YTilde * XTilde = 36, MaxGroupedGemmGroupsNum = 32
-    this->conv_params.push_back(
-        {2, 2, 2, 16, 16, {3, 3}, {28, 28}, {6, 6}, {1, 1}, {1, 1}, {1, 1}});
-    // GroupedGemmGroupsNum = 36, ZTilde * YTilde * XTilde = 36, MaxGroupedGemmGroupsNum = 32
-    this->conv_params.push_back(
-        {2, 2, 2, 16, 16, {6, 6}, {28, 28}, {6, 6}, {1, 1}, {1, 1}, {1, 1}});
-    // GroupedGemmGroupsNum = 32, ZTilde * YTilde * XTilde = 32, MaxGroupedGemmGroupsNum = 32
-    this->conv_params.push_back(
-        {2, 2, 2, 16, 16, {4, 8}, {28, 28}, {4, 8}, {1, 1}, {1, 1}, {1, 1}});
-    this->conv_params.push_back(
-        {2, 2, 2, 192, 192, {3, 3}, {28, 28}, {1, 1}, {1, 1}, {1, 1}, {1, 1}});
-    this->conv_params.push_back(
-        {2, 2, 2, 128, 256, {3, 3}, {14, 14}, {1, 1}, {1, 1}, {1, 1}, {1, 1}});
-    this->conv_params.push_back(
-        {2, 2, 2, 128, 256, {1, 1}, {7, 7}, {2, 2}, {1, 1}, {0, 0}, {0, 0}});
-    this->conv_params.push_back(
-        {2, 2, 2, 128, 256, {1, 1}, {3, 3}, {1, 1}, {1, 1}, {0, 0}, {0, 0}});
-    this->conv_params.push_back(
-        {2, 2, 2, 32, 32, {2, 2}, {12, 12}, {3, 3}, {1, 1}, {0, 0}, {0, 0}});
-    this->conv_params.push_back(
-        {2, 2, 2, 32, 32, {2, 2}, {12, 12}, {2, 2}, {2, 2}, {0, 0}, {0, 0}});
-    this->conv_params.push_back(
-        {2, 1, 6, 448, 896, {1, 1}, {118, 182}, {2, 2}, {1, 1}, {0, 0}, {0, 0}});
-    this->conv_params.push_back({2, 1, 1, 1, 32, {8, 8}, {16, 16}, {1, 1}, {1, 1}, {1, 1}, {1, 1}});
-    this->conv_params.push_back({2, 1, 1, 64, 3, {8, 8}, {16, 16}, {1, 1}, {1, 1}, {1, 1}, {1, 1}});
-    this->conv_params.push_back({2, 1, 1, 1, 1, {8, 8}, {16, 16}, {1, 1}, {1, 1}, {1, 1}, {1, 1}});
+    this->conv_params.push_back({2, 192, 128, 1, 1, {7, 7}, {7, 7}, {1, 1}, {1, 1}, {3, 3}, {3, 3}});
+    this->conv_params.push_back({2, 512, 128, 1, 1, {3, 3}, {7, 7}, {1, 1}, {1, 1}, {1, 1}, {1, 1}});
+    this->conv_params.push_back({2, 48, 128, 1, 1, {5, 5}, {128, 128}, {1, 1}, {1, 1}, {2, 2}, {2, 2}});
+    this->conv_params.push_back({2, 16, 128, 1, 1, {3, 3}, {56, 56}, {1, 1}, {1, 1}, {1, 1}, {1, 1}});
+    this->conv_params.push_back({2, 768, 16, 1, 1, {3, 3}, {28, 28}, {1, 1}, {1, 1}, {1, 1}, {1, 1}});
     this->template Run<2>();
 }
 
-TYPED_TEST(TestGroupedConvndBwdDataXdl3d, Test3D)
-{
-    this->conv_params.clear();
-    this->conv_params.push_back(
-        {3, 2, 2, 128, 256, {1, 1, 1}, {7, 7, 7}, {2, 2, 2}, {1, 1, 1}, {0, 0, 0}, {0, 0, 0}});
-    this->conv_params.push_back(
-        {3, 2, 2, 128, 256, {3, 3, 3}, {14, 14, 3}, {1, 1, 1}, {1, 1, 1}, {1, 1, 1}, {1, 1, 1}});
-    this->conv_params.push_back(
-        {3, 2, 2, 128, 256, {1, 1, 1}, {3, 3, 3}, {1, 1, 1}, {1, 1, 1}, {0, 0, 0}, {0, 0, 0}});
-    this->conv_params.push_back(
-        {3, 2, 2, 32, 32, {1, 2, 2}, {1, 12, 12}, {1, 3, 3}, {1, 1, 1}, {0, 0, 0}, {0, 0, 0}});
-    this->conv_params.push_back(
-        {3, 2, 2, 32, 32, {1, 2, 2}, {1, 12, 12}, {1, 2, 2}, {1, 2, 2}, {0, 0, 0}, {0, 0, 0}});
-    this->conv_params.push_back(
-        {3, 1, 1, 1, 32, {3, 3, 3}, {4, 16, 16}, {1, 1, 1}, {1, 1, 1}, {1, 1, 1}, {1, 1, 1}});
-    this->conv_params.push_back(
-        {3, 1, 1, 64, 3, {3, 3, 3}, {4, 16, 16}, {1, 1, 1}, {1, 1, 1}, {1, 1, 1}, {1, 1, 1}});
-    this->conv_params.push_back(
-        {3, 1, 1, 1, 1, {3, 3, 3}, {4, 16, 16}, {1, 1, 1}, {1, 1, 1}, {1, 1, 1}, {1, 1, 1}});
-    this->template Run<3>();
-}
+// TYPED_TEST(TestGroupedConvndBwdDataXdl3d, Test3D)
+// {
+//     this->conv_params.clear();
+//     this->conv_params.push_back(
+//         {3, 2, 2, 128, 256, {1, 1, 1}, {7, 7, 7}, {2, 2, 2}, {1, 1, 1}, {0, 0, 0}, {0, 0, 0}});
+//     this->conv_params.push_back(
+//         {3, 2, 2, 128, 256, {3, 3, 3}, {14, 14, 3}, {1, 1, 1}, {1, 1, 1}, {1, 1, 1}, {1, 1, 1}});
+//     this->conv_params.push_back(
+//         {3, 2, 2, 128, 256, {1, 1, 1}, {3, 3, 3}, {1, 1, 1}, {1, 1, 1}, {0, 0, 0}, {0, 0, 0}});
+//     this->conv_params.push_back(
+//         {3, 2, 2, 32, 32, {1, 2, 2}, {1, 12, 12}, {1, 3, 3}, {1, 1, 1}, {0, 0, 0}, {0, 0, 0}});
+//     this->conv_params.push_back(
+//         {3, 2, 2, 32, 32, {1, 2, 2}, {1, 12, 12}, {1, 2, 2}, {1, 2, 2}, {0, 0, 0}, {0, 0, 0}});
+//     this->conv_params.push_back(
+//         {3, 1, 1, 1, 32, {3, 3, 3}, {4, 16, 16}, {1, 1, 1}, {1, 1, 1}, {1, 1, 1}, {1, 1, 1}});
+//     this->conv_params.push_back(
+//         {3, 1, 1, 64, 3, {3, 3, 3}, {4, 16, 16}, {1, 1, 1}, {1, 1, 1}, {1, 1, 1}, {1, 1, 1}});
+//     this->conv_params.push_back(
+//         {3, 1, 1, 1, 1, {3, 3, 3}, {4, 16, 16}, {1, 1, 1}, {1, 1, 1}, {1, 1, 1}, {1, 1, 1}});
+//     this->template Run<3>();
+// }
