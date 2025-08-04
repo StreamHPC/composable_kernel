@@ -1345,22 +1345,22 @@ struct DeviceGroupedConvBwdDataMultipleD_Xdl_CShuffle_v1
         //                                (arg.Conv_C_ * X) % BBlockTransferSrcScalarPerVector == 0 &&
         //                                is_w_pad_zero;
 
-        if(!((ConvC % BBlockTransferSrcScalarPerVector == 0 /*|| XC_access_allowed*/) &&
-             ConvK % ABlockTransferSrcScalarPerVector == 0))
-        {
-            if(!(ConvK == 1 && arg.compute_ptr_offset_of_batch_.BatchStrideA_ == 1 &&
-                 NumGroupsToMerge > 1))
-            {
-                printf("cicc\n");
-                return false;
-            }
-            if(!(ConvC == 1 && arg.compute_ptr_offset_of_batch_.BatchStrideB_ == 1 &&
-                 NumGroupsToMerge > 1))
-            {
-                printf("cicc\n");
-                return false;
-            }
-        }
+        // if(!((ConvC % BBlockTransferSrcScalarPerVector == 0 /*|| XC_access_allowed*/) &&
+        //      ConvK % ABlockTransferSrcScalarPerVector == 0))
+        // {
+        //     if(!(ConvK == 1 && arg.compute_ptr_offset_of_batch_.BatchStrideA_ == 1 &&
+        //          NumGroupsToMerge > 1))
+        //     {
+        //         printf("cicc\n");
+        //         return false;
+        //     }
+        //     if(!(ConvC == 1 && arg.compute_ptr_offset_of_batch_.BatchStrideB_ == 1 &&
+        //          NumGroupsToMerge > 1))
+        //     {
+        //         printf("cicc\n");
+        //         return false;
+        //     }
+        // }
 
         // vector load for A matrix from global memory to LDS
         if constexpr(is_same_v<ALayout, tensor_layout::convolution::GNHWK> ||

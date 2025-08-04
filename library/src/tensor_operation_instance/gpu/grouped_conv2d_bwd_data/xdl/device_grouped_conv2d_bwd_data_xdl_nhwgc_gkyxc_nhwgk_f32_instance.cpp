@@ -23,16 +23,7 @@ void add_device_grouped_conv2d_bwd_data_xdl_nhwgk_gkyxc_nhwgc_f32_instances(
                                                                   PassThrough,
                                                                   PassThrough>>>& instances)
 {
-    // 1. Default
-    add_device_operation_instances(
-        instances,
-        device_grouped_conv_bwd_data_xdl_f32_instances<2,
-                                                       NHWGK,
-                                                       GKYXC,
-                                                       Empty_Tuple,
-                                                       NHWGC,
-                                                       ConvBwdDataDefault>{});
-    // // 2. Filter1x1Stride1Pad0
+    // // 1. Default
     // add_device_operation_instances(
     //     instances,
     //     device_grouped_conv_bwd_data_xdl_f32_instances<2,
@@ -40,7 +31,16 @@ void add_device_grouped_conv2d_bwd_data_xdl_nhwgk_gkyxc_nhwgc_f32_instances(
     //                                                    GKYXC,
     //                                                    Empty_Tuple,
     //                                                    NHWGC,
-    //                                                    ConvBwdDataFilter1x1Stride1Pad0>{});
+    //                                                    ConvBwdDataDefault>{});
+    // 2. Filter1x1Stride1Pad0
+    add_device_operation_instances(
+        instances,
+        device_grouped_conv_bwd_data_xdl_f32_instances<2,
+                                                       NHWGK,
+                                                       GKYXC,
+                                                       Empty_Tuple,
+                                                       NHWGC,
+                                                       ConvBwdDataFilter1x1Stride1Pad0>{});
 }
 
 } // namespace instance

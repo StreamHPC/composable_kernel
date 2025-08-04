@@ -958,7 +958,7 @@ struct GridwiseGemmMultipleD_xdl_cshuffle
                 //                 printf("%i ", int(c_shuffle_block_buf[i]));
                 //             }
                 //         }
-                //         printf("\n");
+                //         // printf("\n");
                 //     }
                 //     printf("\n");
                 // }

@@ -98,48 +98,48 @@ int profile_grouped_conv_fwd(int argc, char* argv[])
     const auto params = ck::utils::conv::parse_conv_param(num_dim_spatial, 10, argv);
 
     using F32  = float;
-    using F16  = ck::half_t;
-    using BF16 = ck::bhalf_t;
-    using INT8 = int8_t;
-    using F8   = ck::f8_t;
-    using BF8  = ck::bf8_t;
+    // using F16  = ck::half_t;
+    // using BF16 = ck::bhalf_t;
+    // using INT8 = int8_t;
+    // using F8   = ck::f8_t;
+    // using BF8  = ck::bf8_t;
 
-    //
-    using GNWC   = ck::tensor_layout::convolution::GNWC;
-    using GNHWC  = ck::tensor_layout::convolution::GNHWC;
-    using GNDHWC = ck::tensor_layout::convolution::GNDHWC;
+    // //
+    // using GNWC   = ck::tensor_layout::convolution::GNWC;
+    // using GNHWC  = ck::tensor_layout::convolution::GNHWC;
+    // using GNDHWC = ck::tensor_layout::convolution::GNDHWC;
 
-    using GKXC   = ck::tensor_layout::convolution::GKXC;
-    using GKYXC  = ck::tensor_layout::convolution::GKYXC;
-    using GKZYXC = ck::tensor_layout::convolution::GKZYXC;
+    // using GKXC   = ck::tensor_layout::convolution::GKXC;
+    // using GKYXC  = ck::tensor_layout::convolution::GKYXC;
+    // using GKZYXC = ck::tensor_layout::convolution::GKZYXC;
 
-    // using GKCX   = ck::tensor_layout::convolution::GKXC;
+    // // using GKCX   = ck::tensor_layout::convolution::GKXC;
     using GKCYX  = ck::tensor_layout::convolution::GKCYX;
-    using GKCZYX = ck::tensor_layout::convolution::GKCZYX;
+    // using GKCZYX = ck::tensor_layout::convolution::GKCZYX;
 
-    using GNWK   = ck::tensor_layout::convolution::GNWK;
-    using GNHWK  = ck::tensor_layout::convolution::GNHWK;
-    using GNDHWK = ck::tensor_layout::convolution::GNDHWK;
+    // using GNWK   = ck::tensor_layout::convolution::GNWK;
+    // using GNHWK  = ck::tensor_layout::convolution::GNHWK;
+    // using GNDHWK = ck::tensor_layout::convolution::GNDHWK;
 
-    //
+    // //
     using NGCHW  = ck::tensor_layout::convolution::NGCHW;
-    using NGCDHW = ck::tensor_layout::convolution::NGCDHW;
+    // using NGCDHW = ck::tensor_layout::convolution::NGCDHW;
 
     using NGKHW  = ck::tensor_layout::convolution::NGKHW;
-    using NGKDHW = ck::tensor_layout::convolution::NGKDHW;
+    // using NGKDHW = ck::tensor_layout::convolution::NGKDHW;
 
-    //
-    using NWGC   = ck::tensor_layout::convolution::NWGC;
-    using NHWGC  = ck::tensor_layout::convolution::NHWGC;
-    using NDHWGC = ck::tensor_layout::convolution::NDHWGC;
+    // //
+    // using NWGC   = ck::tensor_layout::convolution::NWGC;
+    // using NHWGC  = ck::tensor_layout::convolution::NHWGC;
+    // using NDHWGC = ck::tensor_layout::convolution::NDHWGC;
 
-    using NWGK   = ck::tensor_layout::convolution::NWGK;
-    using NHWGK  = ck::tensor_layout::convolution::NHWGK;
-    using NDHWGK = ck::tensor_layout::convolution::NDHWGK;
+    // using NWGK   = ck::tensor_layout::convolution::NWGK;
+    // using NHWGK  = ck::tensor_layout::convolution::NHWGK;
+    // using NDHWGK = ck::tensor_layout::convolution::NDHWGK;
 
-    constexpr auto I1 = ck::Number<1>{};
+    // constexpr auto I1 = ck::Number<1>{};
     constexpr auto I2 = ck::Number<2>{};
-    constexpr auto I3 = ck::Number<3>{};
+    // constexpr auto I3 = ck::Number<3>{};
 
     auto profile = [&](auto num_dim_spatial_tmp,
                        auto in_layout,
@@ -203,7 +203,7 @@ int profile_grouped_conv_fwd(int argc, char* argv[])
     };
 
     // GNHWC_GKYXC_GNHWK
-    if(num_dim_spatial == 1 && layout == ConvLayout::GNHWC_GKYXC_GNHWK)
+    /*if(num_dim_spatial == 1 && layout == ConvLayout::GNHWC_GKYXC_GNHWK)
     {
         if(data_type == ConvDataType::F32_F32_F32)
         {
@@ -316,22 +316,22 @@ int profile_grouped_conv_fwd(int argc, char* argv[])
             return profile(I2, NGCHW{}, GKYXC{}, NGKHW{}, BF16{}, BF16{}, BF16{}, BF16{}, BF16{});
         }
     }
-    else if(num_dim_spatial == 2 && layout == ConvLayout::NGCHW_GKCYX_NGKHW)
+    else*/ if(num_dim_spatial == 2 && layout == ConvLayout::NGCHW_GKCYX_NGKHW)
     {
         if(data_type == ConvDataType::F32_F32_F32)
         {
             return profile(I2, NGCHW{}, GKCYX{}, NGKHW{}, F32{}, F32{}, F32{}, F32{}, F32{});
         }
-        else if(data_type == ConvDataType::F16_F16_F16)
-        {
-            return profile(I2, NGCHW{}, GKCYX{}, NGKHW{}, F16{}, F16{}, F16{}, F16{}, F16{});
-        }
-        else if(data_type == ConvDataType::BF16_BF16_BF16)
-        {
-            return profile(I2, NGCHW{}, GKCYX{}, NGKHW{}, BF16{}, BF16{}, BF16{}, BF16{}, BF16{});
-        }
+        // else if(data_type == ConvDataType::F16_F16_F16)
+        // {
+        //     return profile(I2, NGCHW{}, GKCYX{}, NGKHW{}, F16{}, F16{}, F16{}, F16{}, F16{});
+        // }
+        // else if(data_type == ConvDataType::BF16_BF16_BF16)
+        // {
+        //     return profile(I2, NGCHW{}, GKCYX{}, NGKHW{}, BF16{}, BF16{}, BF16{}, BF16{}, BF16{});
+        // }
     }
-    else if(num_dim_spatial == 3 && layout == ConvLayout::NHWGC_GKYXC_NHWGK)
+    /*else if(num_dim_spatial == 3 && layout == ConvLayout::NHWGC_GKYXC_NHWGK)
     {
         if(data_type == ConvDataType::F32_F32_F32)
         {
@@ -384,7 +384,7 @@ int profile_grouped_conv_fwd(int argc, char* argv[])
             return profile(
                 I3, NGCDHW{}, GKCZYX{}, NGKDHW{}, BF16{}, BF16{}, BF16{}, BF16{}, BF16{});
         }
-    }
+    }*/
 
     std::cout << "this data_type & layout is not implemented" << std::endl;
 

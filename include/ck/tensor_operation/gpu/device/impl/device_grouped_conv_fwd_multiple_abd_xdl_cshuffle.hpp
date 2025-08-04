@@ -1404,14 +1404,17 @@ struct DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle
             }
         }
 
+        printf("a1\n");
         if constexpr(NumGroupsToMerge > 1)
         {
             if(!(C == 1))
             {
+                printf("C: %i\n", C);
                 return false;
             }
             if(G % NumGroupsToMerge != 0)
             {
+                printf("a12\n");
                 return false;
             }
             if constexpr(!(is_NSpatialGC_GKSpatial_NSpatialGK<ALayout, BLayout, ELayout>() ||
@@ -1419,9 +1422,11 @@ struct DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle
                            is_NGCHW_NGKHW<ALayout, BLayout, ELayout>() ||
                            is_NGCDHW_NGKDHW<ALayout, BLayout, ELayout>()))
             {
+                printf("a13\n");
                 return false;
             }
         }
+        printf("a2\n");
 
         // check vector access of A
         // FIXME: layout
@@ -1442,6 +1447,7 @@ struct DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle
                       is_NGCDHW_NGKDHW<ALayout, BLayout, ELayout>()) &&
                      G % ABlockTransferSrcScalarPerVector == 0))
                 {
+                    printf("but why?\n");
                     return false;
                 }
             }
@@ -1455,8 +1461,10 @@ struct DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle
             {
                 if(ABlockTransferSrcVectorDim != 1)
                 {
+                printf("booo1\n");
                     return false;
                 }
+                printf("input_spatial_acum: %i\n", input_spatial_acum);
                 if(input_spatial_acum % ABlockTransferSrcScalarPerVector != 0)
                 {
                     return false;
@@ -1465,8 +1473,10 @@ struct DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle
         }
         else
         {
+            printf("booo2\n");
             return false;
         }
+        printf("a3\n");
 
         // check vector access of B
         // FIXME: layout
@@ -1531,6 +1541,7 @@ struct DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle
                 valid = false;
             }
         });
+        printf("a4\n");
 
         if constexpr(NeedTransposeKernel)
         {
@@ -1581,6 +1592,7 @@ struct DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle
         {
             return false;
         }
+        printf("a5\n");
 
         // check vector access of E
         if constexpr(is_same_v<ELayout, ctc::G_NW_K> || is_same_v<ELayout, ctc::G_NHW_K> ||
@@ -1612,6 +1624,7 @@ struct DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle
         {
             return false;
         }
+        printf("a6\n");
 
         // check Gridwise GEMM
         if constexpr(isMultiA || isMultiB)
