@@ -195,12 +195,6 @@ struct ThreadwiseTensorSliceTransfer_v7
                     dst_coords_[i].GetOffset(),
                     is_dst_valid,
                     dst_vectors[i].template AsType<dst_vector_t>()[I0]);
-
-                // if (is_dst_valid) {
-                //     printf("out: %i %i\n", 
-                //         int(dst_coords_[i].GetOffset()), 
-                //         int(dst_vectors[i].template AsType<dst_vector_t>()[I0]));
-                // }
             });
 
             // move coordinate

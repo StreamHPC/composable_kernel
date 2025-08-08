@@ -653,21 +653,6 @@ struct ThreadwiseTensorSliceTransfer_v3r1
                 is_dst_valid,
                 dst_vector_container.template AsType<dst_vector_t>()[I0]);
 
-            // if (is_dst_valid && 
-            //     (dst_vector_container.template AsType<dst_vector_t>()[I0][0] > 0 ||
-            //     dst_vector_container.template AsType<dst_vector_t>()[I0][1] > 0 ||
-            //     dst_vector_container.template AsType<dst_vector_t>()[I0][2] > 0 ||
-            //     dst_vector_container.template AsType<dst_vector_t>()[I0][3] > 0))
-            // {
-            //     printf("in: %i %i %i %i %i\n",
-            //         int(dst_coord_.GetOffset() / PackedSize), 
-            //         int(dst_vector_container.template AsType<dst_vector_t>()[I0][0]),
-            //         int(dst_vector_container.template AsType<dst_vector_t>()[I0][1]),
-            //         int(dst_vector_container.template AsType<dst_vector_t>()[I0][2]),
-            //         int(dst_vector_container.template AsType<dst_vector_t>()[I0][3])
-            //     );
-            // }
-
             constexpr auto move_on_dim = [&]() constexpr
             {
                 StaticallyIndexedArray<bool, nDim> move_on_dim_;

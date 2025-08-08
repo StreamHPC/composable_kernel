@@ -769,7 +769,7 @@ struct DeviceGroupedConvBwdDataMultipleD_Xdl_CShuffle_v1
                                                               ALayoutAfterTranspose,
                                                               BLayoutAfterTranspose,
                                                               DLayout,
-                                                              /*true*/false, /*SplitConvN*/
+                                                              true, /*SplitConvN*/
                                                               ABDataType,
                                                               DDataType,
                                                               NumGroupsToMerge>;
