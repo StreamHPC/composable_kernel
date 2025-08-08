@@ -325,13 +325,6 @@ struct ThreadwiseTensorSliceTransfer_v3r1
             }
             ();
 
-            // auto const &tmp1 = src_coord_.GetVisibleIndex();
-            // auto const tmpVal = src_buf.template Get<vector_type<int, 2>>(src_coord_.GetOffset(), true);
-            // if (tmpVal[0] > 0 || tmpVal[1] > 0) {
-            //     printf("idx hidden: %i %i %i val: %i %i\n", tmp1.At(I0), tmp1.At(I1), tmp1.At(I2),
-            //         int(tmpVal[0]), int(tmpVal[1]));
-            // }
-
             // move src coord
             static_for<0, nDim, 1>{}([&](auto i) {
                 if constexpr(move_on_dim[i])
