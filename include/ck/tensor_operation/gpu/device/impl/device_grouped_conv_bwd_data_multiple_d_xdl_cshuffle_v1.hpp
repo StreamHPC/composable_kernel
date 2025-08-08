@@ -1318,7 +1318,7 @@ struct DeviceGroupedConvBwdDataMultipleD_Xdl_CShuffle_v1
 
         if constexpr(NumGroupsToMerge > 1)
         {
-            // TODO: check the "tilde" thingy. Do I need to expect more elements in the containter?
+            // TODO: check the "tilde" thingy. Do I need to expect and check more elements in the containter?
             const index_t GemmM = arg.a_grid_desc_m_k_container_[0].GetLength(I0);
             const index_t GemmN = arg.b_grid_desc_n_k_container_[0].GetLength(I0);
             // support only if whole M and N can be proccessed on one block
@@ -1351,13 +1351,11 @@ struct DeviceGroupedConvBwdDataMultipleD_Xdl_CShuffle_v1
         //     if(!(ConvK == 1 && arg.compute_ptr_offset_of_batch_.BatchStrideA_ == 1 &&
         //          NumGroupsToMerge > 1))
         //     {
-        //         printf("cicc\n");
         //         return false;
         //     }
         //     if(!(ConvC == 1 && arg.compute_ptr_offset_of_batch_.BatchStrideB_ == 1 &&
         //          NumGroupsToMerge > 1))
         //     {
-        //         printf("cicc\n");
         //         return false;
         //     }
         // }

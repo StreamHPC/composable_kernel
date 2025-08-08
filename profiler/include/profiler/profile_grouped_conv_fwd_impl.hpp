@@ -59,8 +59,6 @@ bool profile_grouped_conv_fwd_impl(int do_verification,
     const auto out_g_n_k_wos_desc =
         ck::utils::conv::make_output_host_tensor_descriptor_g_n_k_wos_packed<OutLayout>(conv_param);
 
-    std::cout << "params:\n" << conv_param << std::endl;
-
     std::array<IndexType, NDimSpatial + 3> a_g_n_c_wis_lengths{};
     std::array<IndexType, NDimSpatial + 3> a_g_n_c_wis_strides{};
     std::array<IndexType, NDimSpatial + 3> b_g_k_c_xs_lengths{};
@@ -86,14 +84,9 @@ bool profile_grouped_conv_fwd_impl(int do_verification,
     copy(conv_param.input_right_pads_, input_right_pads);
 
     Tensor<InDataType> input(in_g_n_c_wis_desc);
-    printf("cicc1\n");
     Tensor<WeiDataType> weight(wei_g_k_c_xs_desc);
-    printf("cicc2\n");
-    std::cout << "2:" << out_g_n_k_wos_desc << std::endl;
     Tensor<OutDataType> host_output(out_g_n_k_wos_desc);
-    printf("cicc3\n");
     Tensor<OutDataType> device_output(out_g_n_k_wos_desc);
-    printf("cicc4\n");
 
     std::cout << "input: " << input.mDesc << std::endl;
     std::cout << "weight: " << weight.mDesc << std::endl;
@@ -103,9 +96,8 @@ bool profile_grouped_conv_fwd_impl(int do_verification,
     {
     case 0: break;
     case 1:
-        input.GenerateTensorValue(GeneratorTensor_2<InDataType>{/*-5, 5*/1, 2});
-        weight.GenerateTensorValue(GeneratorTensor_2<WeiDataType>{/*-5, 5*/1, 2});
-        // weight.mData = {1, 1, 2, 2};
+        input.GenerateTensorValue(GeneratorTensor_2<InDataType>{-5, 5});
+        weight.GenerateTensorValue(GeneratorTensor_2<WeiDataType>{-5, 5});
         break;
     default:
         input.GenerateTensorValue(GeneratorTensor_3<InDataType>{0.0, 1.0});

@@ -515,7 +515,6 @@ struct TransformConvBwdDataToGemm_v1
                 }
                 else
                 {
-                    printf("_ %i %i %i stride: %i\n", N_, Ho_, Wo_, WoStride_);
                     return make_naive_tensor_descriptor(make_tuple(N_ * Ho_ * Wo_ * NumGroupsToMerge, K_),
                                                         make_tuple(WoStride_ /** HoStride_ * GStrideTensorA_*/, KStrideTensorA_));
                 }
@@ -608,7 +607,7 @@ struct TransformConvBwdDataToGemm_v1
             }
             else
             {
-                return make_naive_tensor_descriptor_packed(make_tuple(K_, NumGroupsToMerge, Z_, Y_, X_, C_));                
+                return make_naive_tensor_descriptor_packed(make_tuple(K_, NumGroupsToMerge, Z_, Y_, X_, C_));
             }
         }
         else
@@ -1019,7 +1018,7 @@ struct TransformConvBwdDataToGemm_v1
 
             // B: weight tensor
             const auto wei_gemmbk0_gemmnraw_gemmbk1_grid_desc = transform_tensor_descriptor(
-                make_naive_tensor_descriptor_packed(make_tuple(K_, C_)),
+                make_naive_tensor_descriptor_packed(make_tuple(K_ * NumGroupsToMerge, C_)),
                 make_tuple(make_unmerge_transform(make_tuple(BK0 * batch_k_, BK1)),
                            make_pass_through_transform(C_)),
                 make_tuple(Sequence<0>{}, Sequence<1>{}),
@@ -1324,7 +1323,6 @@ struct TransformConvBwdDataToGemm_v1
                 }
                 else
                 {
-                    // TODO: why do I get errors when using MakeInGridDesc()?
                     auto const in_grid_desc1 = make_naive_tensor_descriptor(
                         make_tuple(NumGroupsToMerge, N_, Hi_, Wi_, C_, 1),
                         make_tuple(GStrideTensorC_,
@@ -1371,53 +1369,6 @@ struct TransformConvBwdDataToGemm_v1
                                 make_merge_transform(make_tuple(C_, NumGroupsToMerge))),
                         make_tuple(Sequence<2>{}, Sequence<4>{}, Sequence<0, 1, 3, 5>{}, Sequence<6, 7>{}),
                         make_tuple(Sequence<>{}, Sequence<>{}, Sequence<0>{}, Sequence<1>{}));
-
-                    // auto const in_grid_desc1 = make_naive_tensor_descriptor(
-                    //     make_tuple(N_, Hi_, Wi_, NumGroupsToMerge, C_, 1),
-                    //     make_tuple(NStrideTensorC_,
-                    //             HiStride_,
-                    //             WiStride_,
-                    //             GStrideTensorC_,
-                    //             CStrideTensorC_,
-                    //             GStrideTensorC_));
-
-                    // const auto in_n_y_x_mg_c_mgPad_desc = transform_tensor_descriptor(
-                    //     in_grid_desc1,
-                    //     make_tuple(
-                    //         make_pass_through_transform(N_),
-                    //         make_pass_through_transform(Hi_),
-                    //         make_pass_through_transform(Wi_),
-                    //         make_pass_through_transform(NumGroupsToMerge),
-                    //         make_pass_through_transform(C_),
-                    //         make_pad_transform(1, 0, NumGroupsToMerge - 1)),
-                    //     make_tuple(Sequence<0>{}, Sequence<1>{}, Sequence<2>{}, Sequence<3>{}, Sequence<4>{}, Sequence<5>{}),
-                    //     make_tuple(Sequence<0>{}, Sequence<1>{}, Sequence<2>{}, Sequence<3>{}, Sequence<4>{}, Sequence<5>{}));
-
-                    // const auto in_n_y_ho_x_wo_mgxor_c_mgxor_grid_desc = transform_tensor_descriptor(
-                    //     in_n_y_x_mg_c_mgPad_desc,
-                    //     make_tuple(
-                    //         make_pass_through_transform(N_),
-                    //         make_embed_transform(make_tuple(I1, Hi_), make_tuple(I1, ConvStrideH_)),
-                    //         make_embed_transform(make_tuple(I1, Wi_), make_tuple(I1, ConvStrideW_)),
-                    //         make_xor_transform(make_tuple(NumGroupsToMerge, NumGroupsToMerge)),
-                    //         make_pass_through_transform(C_)),
-                    //     make_tuple(Sequence<0>{}, Sequence<1>{}, Sequence<2>{}, Sequence<3, 5>{}, Sequence<4>{}),
-                    //     make_tuple(Sequence<0>{}, Sequence<1, 2>{}, Sequence<3, 4>{}, Sequence<5, 7>{}, Sequence<6>{}));
-                    // // We need only matrices from diagonal. X_or returns 0 for the same
-                    // // values. So if matrices is not on diagonal then it will be stored in padding.
-                    // // To avoid use of modulo after xor we assume that NumBatch to merge is power of 2.
-                    // static_assert(NumGroupsToMerge == 1 || NumGroupsToMerge == 2 || NumGroupsToMerge == 4 ||
-                    //             NumGroupsToMerge == 8 || NumGroupsToMerge == 16 ||
-                    //             NumGroupsToMerge == 32 || NumGroupsToMerge == 64);
-
-                    // const auto in_gemmmraw_gemmnraw_grid_desc = transform_tensor_descriptor(
-                    //     in_n_y_ho_x_wo_mgxor_c_mgxor_grid_desc,
-                    //     make_tuple(make_freeze_transform(I0),
-                    //             make_freeze_transform(I0),
-                    //             make_merge_transform(make_tuple(N_, Hi_, Wi_, NumGroupsToMerge)),
-                    //             make_merge_transform(make_tuple(C_, NumGroupsToMerge))),
-                    //     make_tuple(Sequence<1>{}, Sequence<3>{}, Sequence<0, 2, 4, 5>{}, Sequence<6, 7>{}),
-                    //     make_tuple(Sequence<>{}, Sequence<>{}, Sequence<0>{}, Sequence<1>{}));
 
                     const auto in_gemmm_gemmn_grid_desc =
                         ck::tensor_operation::device::PadTensorDescriptor(
