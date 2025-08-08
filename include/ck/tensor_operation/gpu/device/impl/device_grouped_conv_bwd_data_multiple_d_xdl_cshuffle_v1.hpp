@@ -635,7 +635,6 @@ struct DeviceGroupedConvBwdDataMultipleD_Xdl_CShuffle_v1
                     e_g_n_c_wis_lengths_.begin(), NDimSpatial + I3, 1, std::multiplies<>()) *
                 sizeof(EDataType);
 
-            // in NHWGC
             std::array<index_t, NDimSpatial + 3> a_g_n_k_wos_strides_transposed =
                 conv_ngchw_to_nhwgc_transformer.TransposeInOutStrides(a_g_n_k_wos_lengths,
                                                                       a_g_n_k_wos_strides);
@@ -1063,7 +1062,6 @@ struct DeviceGroupedConvBwdDataMultipleD_Xdl_CShuffle_v1
                 gemm_set_id++)
             {
                 const index_t gdx = arg.gemms_grid_size_[gemm_set_id];
-                printf("gdx, gdy, gdz: %i %i %i\n", gdx, gdy, gdz);
                 const index_t gemms_count_for_set =
                     gemm_set_id == arg.gemm_kernel_args_.size() - 1
                         ? arg.gemms_count_ - MaxGroupedGemmGroupsNum * gemm_set_id

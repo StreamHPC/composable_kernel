@@ -384,6 +384,7 @@ make_output_host_tensor_descriptor_g_n_k_wos_packed(const ck::utils::conv::ConvP
         printf("%s\n", OutLayout::name);
         throw std::runtime_error("wrong! unsupported layout");
     }
+
     return transpose_host_tensor_descriptor_given_new2old(
         HostTensorDescriptor(physical_lengths),
         detail::get_layout_transpose_gnchw_to_old<OutLayout>());

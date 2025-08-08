@@ -295,16 +295,6 @@ struct ThreadwiseTensorSliceTransfer_v3r1
                             src_coord_.GetOffset() / PackedSize + LoadOffset, true)};
 
                     static_for<0, VectorLoadSize / elem_op_vec_len, 1>{}([&](auto idx) {
-                        // if (is_src_valid /*&&
-                        //     src_vector.template AsType<src_elem_op_vec_t>()[idx] > 0*/)
-                        // {
-                        //     printf("%i idx seq: %i %i %i\n  offset: %i\n  val: %i\n", nDim,
-                        //         src_data_idx_seq[0], src_data_idx_seq[1], src_data_idx_seq[2],
-                        //         int(src_coord_.GetOffset() / PackedSize + LoadOffset),
-                        //         int(clear)
-                        //     );
-                        // }
-
                         // apply the src elementwise op and convert to DstData under the hood if
                         // needed
                         src_element_op_(
