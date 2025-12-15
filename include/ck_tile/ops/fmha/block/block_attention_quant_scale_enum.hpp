@@ -13,6 +13,7 @@ enum class BlockAttentionQuantScaleEnum
     NO_SCALE  = 0,
     PERTENSOR = 1,
     BLOCKSCALE,
+    MX,
 };
 
 template <BlockAttentionQuantScaleEnum>
@@ -32,6 +33,10 @@ template <>
 struct BlockAttentionQuantScaleEnumToStr<BlockAttentionQuantScaleEnum::BLOCKSCALE>
 {
     static constexpr const char* name = "blockscale";
+};
+struct BlockAttentionQuantScaleEnumToStr<BlockAttentionQuantScaleEnum::MX>
+{
+    static constexpr const char* name = "mx";
 };
 
 } // namespace ck_tile
