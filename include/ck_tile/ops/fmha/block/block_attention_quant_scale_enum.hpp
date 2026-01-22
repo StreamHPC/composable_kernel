@@ -34,6 +34,7 @@ struct BlockAttentionQuantScaleEnumToStr<BlockAttentionQuantScaleEnum::BLOCKSCAL
 {
     static constexpr const char* name = "blockscale";
 };
+template <>
 struct BlockAttentionQuantScaleEnumToStr<BlockAttentionQuantScaleEnum::MX>
 {
     static constexpr const char* name = "mx";
