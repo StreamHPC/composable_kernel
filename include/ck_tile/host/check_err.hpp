@@ -19,7 +19,7 @@
 namespace ck_tile {
 
 /** @brief Maximum number of error values to display when checking errors */
-constexpr int ERROR_DETAIL_LIMIT = 16;
+constexpr int ERROR_DETAIL_LIMIT = 64;
 
 /** @brief 8-bit floating point type */
 using F8 = ck_tile::fp8_t;
@@ -357,6 +357,11 @@ check_err(const Range& out,
         return either_not_finite && !(allow_infinity_ref && both_infinite_and_same);
     };
 
+    size_t d0 =
+        out.get_num_of_dimension() >= 2 ? out.get_lengths()[out.get_num_of_dimension() - 2] : 1;
+    size_t d1 = out.get_lengths()[out.get_num_of_dimension() - 1];
+    std::cerr << std::endl;
+
     bool res{true};
     int err_count = 0;
     double err    = 0;
@@ -373,8 +378,9 @@ check_err(const Range& out,
             err_count++;
             if(err_count < ERROR_DETAIL_LIMIT)
             {
-                std::cerr << msg << std::setw(12) << std::setprecision(7) << " out[" << i
-                          << "] != ref[" << i << "]: " << o << " != " << r << std::endl;
+                std::cerr << msg << std::setw(12) << std::setprecision(7) << i << "\t"
+                          << (i / d1 / d0) << "\t" << (i / d1 % d0) << "\t" << (i % d1) << "\t" << o
+                          << " != " << r << std::endl;
             }
             res = false;
         }
