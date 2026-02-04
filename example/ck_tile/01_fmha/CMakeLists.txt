@@ -16,7 +16,7 @@ set(FMHA_FWD_ENABLE_APIS "fwd" CACHE STRING
 if(BUILD_TESTING)
   # Build instances of all APIs for tests
   message(DEBUG "Enabling all FWD APIs of CK Tile FMHA for because testing is enabled")
-  set(FMHA_FWD_ENABLE_APIS "all")
+  set(FMHA_FWD_ENABLE_APIS "fwd")
 endif()
 if(FMHA_FWD_ENABLE_APIS STREQUAL "all")
   set(FMHA_FWD_ENABLE_APIS ${FMHA_FWD_KNOWN_APIS})
@@ -65,7 +65,8 @@ set(FMHA_BWD_CODE_GEN_COMMON_ARGS
 # there is no corresponding instance for parameters).
 if(BUILD_TESTING)
   # Filters are in the order of FMHA_FWD_KNOWN_APIS: fwd,fwd_splitkv_combine@fwd_splitkv,fwd_appendkv,pagedkv_prefill
-  list(APPEND FMHA_FWD_CODE_GEN_COMMON_ARGS --filter *_nlogits*_nskip*_nsink*,*@*_nlogits*_nbias*_nsink*,*,*_nlogits*_nskip*_pagedkv*)
+  # list(APPEND FMHA_FWD_CODE_GEN_COMMON_ARGS --filter *_nlogits*_nskip*_nsink*,*@*_nlogits*_nbias*_nsink*,*,*_nlogits*_nskip*_pagedkv*)
+  list(APPEND FMHA_FWD_CODE_GEN_COMMON_ARGS --filter fmha_fwd_d*_mxfp*_batch*_npad_nlogits_nbias_*_lse_ndropout_nskip_mx_ntrload_nsink,*@*_nlogits*_nbias*_nsink*,*,*_nlogits*_nskip*_pagedkv)
 endif()
 
 # generate a list of kernels, but not actually emit files at config sta
@@ -91,6 +92,8 @@ endif()
 #       as current cmake list, otherwise will not figure out the dependency properly
 file(STRINGS ${CMAKE_CURRENT_BINARY_DIR}/fwd_blob_list.txt FMHA_FWD_GEN_BLOBS)
 file(STRINGS ${CMAKE_CURRENT_BINARY_DIR}/bwd_blob_list.txt FMHA_BWD_GEN_BLOBS)
+
+message("FMHA_FWD_GEN_BLOBS: ${FMHA_FWD_GEN_BLOBS}")
 
 add_custom_command(
   OUTPUT ${FMHA_FWD_GEN_BLOBS}

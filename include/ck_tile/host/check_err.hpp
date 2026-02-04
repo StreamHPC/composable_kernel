@@ -290,18 +290,36 @@ check_err(const Range& out,
         return either_not_finite && !(allow_infinity_ref && both_infinite_and_same);
     };
 
+    std::cerr << std::endl;
+    // for(std::size_t i = 0; i < std::min(size_t{256 * 256}, ref.size()); ++i)
+    for(std::size_t i = 0; i < ref.size(); ++i)
+    {
+        const double o   = *std::next(std::begin(out), i);
+        const double r   = *std::next(std::begin(ref), i);
+        const double rel = std::abs(r - o) / std::max(std::abs(o), std::abs(r));
+        // if(rel > 0.05 || i % 123 == 0)
+        if(i % 123 == 0)
+        {
+            std::cerr << std::setw(12) << std::setprecision(7) << i << "\t" << (i / 256) << "\t"
+                      << (i % 256) << "\t" << o << "\t" << r << "\t" << rel
+                      << (rel > 0.05 ? "*****" : "") << std::endl;
+        }
+    }
+
     bool res{true};
     int err_count  = 0;
     double err     = 0;
     double max_err = std::numeric_limits<double>::min();
+    double stddev  = 0;
     for(std::size_t i = 0; i < ref.size(); ++i)
     {
         const double o = *std::next(std::begin(out), i);
         const double r = *std::next(std::begin(ref), i);
         err            = std::abs(o - r);
+        max_err        = err > max_err ? err : max_err;
+        stddev += err * err;
         if(err > atol + rtol * std::abs(r) || is_infinity_error(o, r))
         {
-            max_err = err > max_err ? err : max_err;
             err_count++;
             if(err_count < ERROR_DETAIL_LIMIT)
             {
@@ -311,8 +329,9 @@ check_err(const Range& out,
             res = false;
         }
     }
-    if(!res)
+    // if(!res)
     {
+        std::cerr << "stddev: " << std::sqrt(stddev / double(ref.size())) << " ";
         report_error_stats(err_count, max_err, ref.size());
     }
     return res;

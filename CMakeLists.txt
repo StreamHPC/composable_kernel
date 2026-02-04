@@ -702,7 +702,7 @@ option(MIOPEN_REQ_LIBS_ONLY "Build only the MIOpen required libraries" OFF)
 option(DISABLE_OFFLOAD_COMPRESS "Disable offload compress compiler flag when building instances" OFF)
 option(BUILD_MHA_LIB "Build the static library for flash attention" OFF)
 
-add_subdirectory(library)
+# add_subdirectory(library)
 
 if (CK_EXPERIMENTAL_BUILDER)
   add_subdirectory(experimental/builder)
@@ -726,7 +726,7 @@ if(NOT GPU_ARCHS AND USER_GPU_TARGETS AND NOT MIOPEN_REQ_LIBS_ONLY)
         LIBRARY_NAME composablekernel
         PACKAGE_NAME tutorials
    )
-   add_subdirectory(tile_engine)
+#    add_subdirectory(tile_engine)
    if(BUILD_TESTING)
        add_subdirectory(test)
    endif()

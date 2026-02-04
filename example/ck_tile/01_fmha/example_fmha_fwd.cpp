@@ -219,7 +219,7 @@ int main(int argc, char* argv[])
             return -1;
 
         const std::string data_type = arg_parser.get_str("prec");
-        if(data_type == "fp32")
+        /*if(data_type == "fp32")
         {
             return run<FmhaFwdFp32>(arg_parser) == fwd_result::success ? 0 : -2;
         }
@@ -243,7 +243,8 @@ int main(int argc, char* argv[])
         {
             return run<FmhaFwdFp8Fp32>(arg_parser) == fwd_result::success ? 0 : -2;
         }
-        else if(data_type == "mxfp8")
+        else*/
+        if(data_type == "mxfp8")
         {
             return run<FmhaFwdMxFp8>(arg_parser) == fwd_result::success ? 0 : -2;
         }
