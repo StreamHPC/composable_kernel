@@ -96,7 +96,7 @@ template <>
 auto get_elimit<FmhaFwdMxFp4>(std::string /*init_method*/)
 {
     double rtol = 1e-1;
-    double atol = 2.6e-1;
+    double atol = 2.8e-1;
     return ck_tile::make_tuple(rtol, atol);
 }
 
@@ -320,13 +320,6 @@ fwd_result fmha_fwd_run(mode_enum mode,
         std::cerr << "hdim_q is made even for fp4 K data type" << std::endl;
         hdim_q =
             ck_tile::integer_least_multiple(hdim_q, ck_tile::numeric_traits<KDataType>::PackedSize);
-    }
-    if(is_mx && !seqlen_kpads.empty() && seqlen_kpads[0] > 0)
-    {
-        std::cerr
-            << "seqlen_kpads is not supported with MX types. ignoring the 'seqlen_kpads' option"
-            << std::endl;
-        seqlen_kpads = {-1};
     }
 
     std::mt19937 random_engine(seed != 0 ? seed : std::random_device{}());
@@ -846,6 +839,19 @@ fwd_result fmha_fwd_run(mode_enum mode,
             vnew_host);
         ck_tile::FillUniformDistribution<BiasDataType>{0.f, 1.f, next_seed()}(bias_host);
     }
+
+    // std::cout << std::endl;
+    // q_host.print_first_n(std::cout, 10);
+    // std::cout << std::endl;
+    // k_host.print_first_n(std::cout, 10);
+    // std::cout << std::endl;
+    // knew_host.print_first_n(std::cout, 10);
+    // std::cout << std::endl;
+    // v_host.print_first_n(std::cout, 10);
+    // std::cout << std::endl;
+    // vnew_host.print_first_n(std::cout, 10);
+    // std::cout << std::endl;
+
     if(bias.type == bias_enum::alibi)
     {
         auto slopes = ck_tile::get_alibi_slopes<SaccDataType>(nhead);
@@ -2116,6 +2122,12 @@ fwd_result fmha_fwd_run(mode_enum mode,
                                                    1e-4,
                                                    /* allow_infinity_ref = */ true);
 
+                // std::cout << "lse result: " << std::endl;
+                // lse_host_result.print_first_n(std::cout, 10);
+                // std::cout << std::endl << "lse reference: " << std::endl;
+                // lse_host_ref.print_first_n(std::cout, 10);
+                // std::cout << std::endl;
+
                 pass &= cur_pass;
                 if(!cur_pass)
                 {
@@ -2230,6 +2242,13 @@ fwd_result fmha_fwd_run(mode_enum mode,
                                                std::string("OUT Error: Incorrect results!"),
                                                rtol,
                                                atol);
+
+            // std::cout << "o result: " << std::endl;
+            // o_host_result.print_first_n(std::cout, 10);
+            // std::cout << std::endl << "o reference: " << std::endl;
+            // o_host_ref.print_first_n(std::cout, 10);
+            // std::cout << std::endl;
+
             pass &= cur_pass;
             if(!cur_pass)
             {

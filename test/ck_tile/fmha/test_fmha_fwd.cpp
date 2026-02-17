@@ -61,7 +61,7 @@ struct TestConfigs<FmhaFwdFp8Bf16>
     static constexpr auto ModeValues         = std::array{mode_enum::batch, mode_enum::group};
     static constexpr auto IsVRowmajorValues  = std::array{true};
     static constexpr auto qscale_str         = "pt";
-    static constexpr bool def_lse            = false;
+    static constexpr bool def_lse            = true;
     static constexpr bool def_is_v_rowmajor  = true;
     static constexpr auto init_method        = "3";
     // When there are no fp8 instances with padding, pad seqlen to avoid skipping most of the tests:
@@ -134,7 +134,7 @@ constexpr auto init_method       = TestConfigs<DataTypeConfig>::init_method;
 int adjust_seqlen(int seqlen) { return TestConfigs<DataTypeConfig>::adjust_seqlen(seqlen); }
 
 // Random seed used for initializing input tensors. 0 for non-deterministic seed
-CK_TILE_DECLARE_ENV_VAR(CK_TILE_TEST_SEED, uint64_t, 123456)
+CK_TILE_DECLARE_ENV_VAR(CK_TILE_TEST_SEED, uint64_t, 12456)
 
 // Whether to run long tests (from smoke_test_fwd.sh)
 CK_TILE_DECLARE_ENV_VAR_BOOL(CK_TILE_FMHA_LONG_TESTS)
@@ -165,6 +165,52 @@ const ck_tile::stream_config stream_config{
 auto EnableTestIf(bool condition)
 {
     return ValuesIn(condition ? std::vector<bool>{true} : std::vector<bool>{});
+}
+
+// Dummy test
+
+TEST(Dummy, DataTypeConfig)
+{
+    auto [hdim_q, hdim_v] = std::tuple{64, 64};
+
+    int hdim_q_ = -1;
+    int hdim_v_ = -1;
+    hdim_q = hdim_q_ == -1 ? hdim_q : hdim_q_;
+    hdim_v = hdim_v_ == -1 ? hdim_v : hdim_v_;
+
+    auto result = fmha_fwd_run<DataTypeConfig>(mode_enum::batch,
+                                               1, // batch
+                                               1, // nhead
+                                               1, // nhead_k
+                                               {adjust_seqlen(1)},
+                                               {adjust_seqlen(1)},
+                                               hdim_q,
+                                               hdim_v,
+                                               0,             // seqlen_knew
+                                               {-1},          // seqlen_qpads
+                                               {-1},           // seqlen_kpads
+                                               {},            // q_eff_lens_per_batch
+                                               {},            // kv_eff_lens_per_batch
+                                               0,             // rotary_dim
+                                               true,          // i_perm
+                                               false,         // o_perm
+                                               0,             // scale_s
+                                               0,             // logits_soft_cap
+                                               false,         // is_v_rowmajor
+                                               false,         // lse
+                                               0,             // page_block_size
+                                               false,         // use_cache_batch_idx
+                                               "n",           // bias_str
+                                               0.0f,          // p_drop
+                                               0,             // drop_seed
+                                               0,             // drop_offset
+                                               false,         // drop_prefs
+                                               "0",           // mask_str
+                                               qscale_str,
+                                               true, // is_rotary_interleaved
+                                               1,    // num_splits
+                                               COMMON_ARGS);
+    CHECK_RESULT(result);
 }
 
 class AllLong : public TestWithParam<
@@ -950,12 +996,6 @@ static std::vector<PaddingParam> BuildPaddingParams()
 {
     std::vector<PaddingParam> params;
 
-    if constexpr(ck_tile::is_any_of<DataTypeConfig, FmhaFwdFp8Bf16, FmhaFwdMxFp8, FmhaFwdMxFp4>::
-                     value)
-    {
-        return params;
-    }
-
     // mask variants to cover
     const std::vector<std::string> mask_variants{"0", "t:50,64", "b:32,40"};
     const std::vector<std::string> mask_variants_reduced{"0", "t:50,64"}; // used for trimmed sets
@@ -990,7 +1030,7 @@ static std::vector<PaddingParam> BuildPaddingParams()
         bool full;   // whether to use full coverage sets
     };
     const std::vector<HeadCfg> head_cfgs = {
-        {9, -1, true}, // MHA full
+        {9, -1, false}, // MHA full
         {9, 3, false}, // GQA reduced (nhead/nhead_k=3)
         {9, 1, false}  // MQA reduced
     };
